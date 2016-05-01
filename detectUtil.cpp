@@ -494,7 +494,7 @@ bool exampleScan(
 	//look at this example's variance
 	int nRows = example.rows();
 	double std = sqrt(example.cwiseProduct(example).sum()/pow((float)nRows, 2) - pow(example.sum()/pow((float)nRows, 2), 2));
-	if(isnan(std) || std < FLAT_THRESHOLD)
+    if(std::isnan(std) || std < FLAT_THRESHOLD)
 		return false;
 	//compute its integral image if this image is not flat
 	MatrixXld integralImage(nRows, nRows);
@@ -584,7 +584,7 @@ void tscan(
 			double variance = sumImagePart(integralImageSquare, i, j, area.side, area.side)/pow((float)area.side, 2);
 			variance -= pow(sumImagePart(integralImage, i, j, area.side, area.side)/pow((float)area.side, 2), 2);
 			double std = sqrt(variance);
-			if(!(isnan(std) || std < FLAT_THRESHOLD)){
+            if(!(std::isnan(std) || std < FLAT_THRESHOLD)){
  				if(detectFace(area, integralImage, std/STD_NORM_CONST, tweaks, cascade, defaultLayerNumber)){
 					#pragma omp critical
 					{
