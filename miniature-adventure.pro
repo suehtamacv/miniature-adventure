@@ -24,4 +24,4 @@ HEADERS += commonUtil.h \
 
 LIBS += -lboost_system -lboost_program_options -larmadillo -lpng
 
-INCLUDEPATH += eigen/
+INCLUDEPATH += /usr/include/eigen3
