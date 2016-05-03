@@ -32,7 +32,6 @@
 #include <fstream>
 #include <streambuf>
 #include <cstdio>
-#include <Eigen/Dense>
 #include "commonUtil.h"
 #include "detectUtil.h"
 #include "Detector.h"
@@ -46,23 +45,21 @@
 #define WINDOW_SCALE_MULTIPLIER 1.5
 
 using namespace std;
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,Dynamic> MatrixXld;
+using namespace arma;
 
 //smooth a square image by row and then by column
-void gaussianSmoothing(
-		MatrixXf * image
+void gaussianSmoothing(Mat<float> *image
 ,		float sigma
 ){
-	int nRows = image[0].rows();
+    int nRows = image[0].n_rows;
 	#pragma omp parallel for schedule(static)
 	for(int row = 0; row < nRows; row++)
 		gaussianRowSmoothing(image[0], sigma, row, nRows);
-	MatrixXf imageMatrix = image[0].transpose();
+    Mat<float> imageMatrix = image[0].t();
 	#pragma omp parallel for schedule(static)
 	for(int row = 0; row < nRows; row++)
 		gaussianRowSmoothing(imageMatrix, sigma, row, nRows);
-	image[0] = imageMatrix.transpose();
+    image[0] = imageMatrix.t();
 }
 
 inline float gaussianKernel(
@@ -74,8 +71,7 @@ inline float gaussianKernel(
 }
 
 //row-wise convolution
-void gaussianRowSmoothing(
-		MatrixXf & image
+void gaussianRowSmoothing(Mat<float> &image
 ,		float sigma
 ,		int row
 ,		int nRows
@@ -83,7 +79,7 @@ void gaussianRowSmoothing(
 	int width = ceil(sigma);
 	float sigmaSquare = pow(sigma, 2)*2;
 	//temporary storage for convolution
-	RowVectorXf container(nRows);
+    Row<float> container(nRows);
 	#pragma omp parallel for schedule(static)
 	for(int k = 0; k < nRows; k++){
 		//kernel position
@@ -91,26 +87,25 @@ void gaussianRowSmoothing(
 		int right = min(nRows-1, k+width);
 		int vectSize = right-left+1;
 		//kernel value
-		RowVectorXf weights(vectSize);
+        Row<float> weights(vectSize);
 		for(int i = left; i <= right; i++)
 			weights(i-left) = gaussianKernel(sigmaSquare, k, i);
-		weights /= weights.sum();
+        weights /= accu(weights);
 		//convolution
-		container(k) = image.row(row).segment(left, vectSize).dot(weights);
+        container(k) = accu(image.row(row).cols(left, left+vectSize-1) % weights);
 	}
 	//modify
 	image.row(row) = container;
 }
 
 //zoom out a square negative to the desired size and test if it remains a good negative
-bool zoomOutNegative(
-	MatrixXf *& image
+bool zoomOutNegative(Mat<float> *&image
 ,	int shrinkedSize
 ,	int defaultLayerNumber
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
+,	Row<float> &tweaks
 ){
-	int windowSize = image[0].rows();
+    int windowSize = image[0].n_rows;
 	//if it's the right size, this is a good one
 	if(shrinkedSize == windowSize)
 		return true;
@@ -119,7 +114,7 @@ bool zoomOutNegative(
 	//this is an empirical formula
 	float sigma = 0.6*sqrt(pow(ratio, 2) - 1);
 	gaussianSmoothing(image, sigma);
-	MatrixXf zoomed(shrinkedSize, shrinkedSize);
+    Mat<float> zoomed(shrinkedSize, shrinkedSize);
 	int imSize = pow((float)shrinkedSize, 2);
 	//an efficient parallelization for downsampling
 	#pragma omp parallel for schedule(static)
@@ -140,7 +135,7 @@ bool zoomOutNegative(
 	delete [] image;
 	//zoom isn't necessarily the same after imwrite() and imread()
 	//because of the induced quantification and truncation
-	image = new MatrixXf [1];
+    image = new Mat<float> [1];
 	image[0] = zoomed;
 	imwrite("robustTest.png", image, 1);
 	int nRows, nCols, nChannels;
@@ -155,15 +150,14 @@ bool zoomOutNegative(
 }
 
 //build a cascade from Detector object
-VectorXf readInCascade(
+Row<float> readInCascade(
 	vector<stumpRule> *& cascade
 ){
 	//allocate
 	int layerCount = Detector::getLayerCount();
 	cascade = new vector<stumpRule> [layerCount];
-	VectorXf tweaks;
-	tweaks.setZero(layerCount);
-	int linearCounter = 0;
+    Row<float> tweaks = zeros<Row<float>>(layerCount);
+    int linearCounter = 0;
 	//this should be done in a linear fashion
 	for(int layer = 0; layer < layerCount; layer++){
 		int committeeSize = Detector::getCommitteSize(layer);
@@ -184,23 +178,23 @@ VectorXf readInCascade(
 }
 
 //convert a gray to a RGB for highlighting
-MatrixXf * convertToColor(
+Mat<float> *convertToColor(
 	const char * inputName
 ,	int & nRows
 ,	int & nCols
 ,	bool & isColor
 ){
 	int nChannels;
-	MatrixXf * original = NULL;
+    Mat<float> * original = NULL;
 	imread(inputName, nRows, nCols, nChannels, original, false);
 	//always output a color image
 	isColor = true;
 	if(nChannels == 1){
 		isColor = false;
-		MatrixXf copy(nRows, nCols);
+        Mat<float> copy(nRows, nCols);
 		copy = original[0];
 		delete [] original;
-		original = new MatrixXf [3];
+        original = new Mat<float> [3];
 		for(int ch = 0; ch < 3; ch++)
 			original[ch] = copy;
 	}
@@ -211,18 +205,18 @@ MatrixXf * convertToColor(
 bool isSkinPixel(
 	int row
 ,	int col
-,	MatrixXf * image
+,	Mat<float> * image
 ){
 	int R = image[0](row, col);
 	int G = image[1](row, col);
 	int B = image[2](row, col);
-	int diff = max(R, max(G, B))- min(R, min(G, B));
+    int diff = std::max(R, max(G, B))- std::min(R, min(G, B));
 	return R > 95 && G > 40 && B > 20 && R > G && R > B && R-G > 15 && diff > 15;
 }
 
 bool hasEnoughSkin(
-	MatrixXf * image
-,	square area
+    Mat<float> * image
+,	rect area
 ){
 	int cornerI = area.pos_i;
 	int cornerJ = area.pos_j;
@@ -242,12 +236,12 @@ bool hasEnoughSkin(
 //2: only skin color test
 //3: both robustness and skin color test
 void augmentedPostProcessing(
-	MatrixXf * image
+    Mat<float> * image
 ,	int nRows
 ,	int nCols
 ,	bool isColor
 ,	float required_nFriends
-,	vector<square> & areas
+,	vector<rect> & areas
 ,	int ppMode
 ){
 	if(ppMode == 0)
@@ -260,7 +254,7 @@ void augmentedPostProcessing(
 			postProcessing(nRows, nCols, required_nFriends, areas);
 		//skin test
 		int nWindows = areas.size();
-		vector<square> temp;
+        vector<rect> temp;
 		for(int i = 0; i < nWindows; i++)
 			if(hasEnoughSkin(image, areas[i]))
 				temp.push_back(areas[i]);
@@ -271,13 +265,13 @@ void augmentedPostProcessing(
 //highlight a rectangle part of an image
 void highlight(
 	const char * inputName
-,	vector<square> & areas
+,	vector<rect> & areas
 ,	int ppMode
 ,	float required_nFriends
 ){
 	int nRows, nCols;
 	bool isColor;
-	MatrixXf * original = convertToColor(inputName, nRows, nCols, isColor);
+    Mat<float> * original = convertToColor(inputName, nRows, nCols, isColor);
 	int nSquares = areas.size();
 	//no detection, no post-processing
 	ppMode = nSquares == 0 ? 0 : ppMode;
@@ -322,11 +316,10 @@ void highlight(
 }
 
 //look at a subwindow and use the trained cascade to reject or accept it
-bool detectFace(
-	square const & area
-,	MatrixXld & integralImage
+bool detectFace(rect const & area
+,	Mat<double> &integralImage
 , 	double varianceNormalizer
-,	VectorXf & tweaks
+,	Row<float> &tweaks
 ,	vector<stumpRule> const * cascade
 ,	int defaultLayerNumber
 ){
@@ -366,10 +359,9 @@ inline int round(
 }
 
 //return feature computed on a scaled image
-double computeFeature(
-	int featureIndex
-,	square const & area
-,	MatrixXld & integralImage
+double computeFeature(int featureIndex
+,	rect const & area
+,	Mat<double> &integralImage
 ,	bool removeMean
 ){
 	static int sampleSize = Detector::getSampleSize();
@@ -486,21 +478,21 @@ double computeFeature(
 
 //a simplified interface for detectFace()
 bool exampleScan(
-	MatrixXf & example
+    Mat<float> & example
 ,	int defaultLayerNumber
 ,	vector<stumpRule> const * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 ){
 	//look at this example's variance
-	int nRows = example.rows();
-	double std = sqrt(example.cwiseProduct(example).sum()/pow((float)nRows, 2) - pow(example.sum()/pow((float)nRows, 2), 2));
+    int nRows = example.n_rows;
+    double std = sqrt(accu(example % example)/pow((float)nRows, 2) - pow(accu(example)/pow((float)nRows, 2), 2));
     if(std::isnan(std) || std < FLAT_THRESHOLD)
 		return false;
 	//compute its integral image if this image is not flat
-	MatrixXld integralImage(nRows, nRows);
+    Mat<double> integralImage(nRows, nRows);
 	buildIntegralImage(example, integralImage);
 	//it's about the whole thing
-	square area;
+    rect area;
 	area.pos_i = 0;
 	area.pos_j = 0;
 	area.side = nRows;
@@ -517,8 +509,8 @@ void scan(
 ){
 	//read in cascade
 	vector<stumpRule> * cascade = NULL;
-	VectorXf tweaks = readInCascade(cascade);
-	vector<square> toMark, combined;
+    Row<float> tweaks = readInCascade(cascade);
+    vector<rect> toMark, combined;
 	//scan the file
 	int nRows, nCols;
 	tscan(file, nRows, nCols, defaultLayerNumber, cascade, tweaks, combined);
@@ -547,24 +539,23 @@ void scan(
 	}
 }
 
-void tscan(
-	const char * file
+void tscan(const char * file
 ,	int & nRows
 ,	int & nCols
 ,	int defaultLayerNumber
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
-,	vector<square> & toMark
+,	Row<float> &tweaks
+,	vector<rect> & toMark
 ){
 	//build integral image and squared integral image
 	int nChannels;
-	MatrixXf * toDetect = NULL;
+    Mat<float> * toDetect = NULL;
 	imread(file, nRows, nCols, nChannels, toDetect, true);
-	MatrixXld integralImage(nRows, nCols);
+    Mat<double> integralImage(nRows, nCols);
 	buildIntegralImage(toDetect[0], integralImage);
-	MatrixXf toDetectSquared = toDetect[0].cwiseProduct(toDetect[0]);
+    Mat<float> toDetectSquared = toDetect[0] % toDetect[0];
 	delete [] toDetect;
-	MatrixXld integralImageSquare(nRows, nCols);
+    Mat<double> integralImageSquare(nRows, nCols);
 	buildIntegralImage(toDetectSquared, integralImageSquare);
 	//get down to the business
 	int sampleSize = Detector::getSampleSize();
@@ -574,7 +565,7 @@ void tscan(
 		int i = ij/(nCols - sampleSize + 1);
 		int j = ij%(nCols - sampleSize + 1);
 		double scale = 1;
-		square area;
+        rect area;
 		area.pos_i = i;
 		area.pos_j = j;
 		area.side = sampleSize;
@@ -600,7 +591,7 @@ void tscan(
 }
 
 bool isLegal(
-	square & area
+    rect & area
 ,	int nRows
 ,	int nCols
 ){
@@ -617,15 +608,15 @@ bool isLegal(
 }
 
 bool windowOrder(
-	square window1
-,	square window2
+    rect window1
+,	rect window2
 ){
 	return window1.side < window2.side;
 }
 
 bool isInside(
-	square window1
-,	square window2
+    rect window1
+,	rect window2
 ){
 	int iy = window1.pos_i + window1.side/2;
 	int ix = window1.pos_j + window1.side/2;
@@ -638,11 +629,10 @@ void postProcessing(
 	int nRows
 ,	int nCols
 ,	float required_nFriends
-,	vector<square> & areas
+,	vector<rect> & areas
 ){
-	MatrixXi partition;
-	partition.setZero(nRows, nCols);
-	int nWindows = areas.size();
+    Mat<int> partition = zeros<Mat<int>>(nRows, nCols);
+    int nWindows = areas.size();
 	//already a decision has been made
 	sort(areas.begin(), areas.end(), windowOrder);
 	for(int w = 0; w < nWindows; w++)
@@ -676,7 +666,7 @@ void postProcessing(
 	for(int i = 0; i < nowAt; i++)
 		flags[i] = true;
 	Map<MatrixXi> fineParts(connectedParts, nRows, nCols);
-	vector<square> representatives;
+    vector<rect> representatives;
 	vector<float> ratios;
 	for(int w = 0; w < nWindows; w++){
 		int part = fineParts(areas[w].pos_i, areas[w].pos_j);
@@ -724,8 +714,8 @@ void postProcessing(
 //also create the featureMap in a file named cppName
 //inTrain sets training phase apart from testing phase
 void computeHaarLikeFeatures(
-		MatrixXf & image
-,		VectorXf *& features
+        Mat<float> & image
+,		Row<float> *& features
 ,		const char * cppName
 ,		bool enforceShape
 ,		bool firstTime
@@ -747,12 +737,12 @@ void computeHaarLikeFeatures(
 
 
 	//integral image
-	int nRows = image.rows();
-	int nCols = image.cols();
+    int nRows = image.n_rows;
+    int nCols = image.n_cols;
 	//first normalize the example, this might prove key to learning success
-	float mean = image.sum()/(float)(nRows*nCols);
-	image -= MatrixXf::Constant(nRows, nCols, mean);
-	float std = sqrt(image.cwiseProduct(image).sum()/(float)(nRows*nCols));
+    float mean = accu(image)/(float)(nRows*nCols);
+    image -= mean;
+    float std = sqrt(accu(image % image)/(float)(nRows*nCols));
 	if(std < FLAT_THRESHOLD || isnan(std)){
 		std = FLAT_THRESHOLD;
 		cout << "Find one completely flat example. Don't worry. It'll be treated as an outlier presumably." << endl;
@@ -760,7 +750,7 @@ void computeHaarLikeFeatures(
 	//fully use the float range
 	image *= STD_NORM_CONST;
 	image /= std;
-	MatrixXld integralImage(nRows, nCols);
+    Mat<double> integralImage(nRows, nCols);
 	buildIntegralImage(image, integralImage);
 
 	//determine the size of a feature vector
@@ -787,8 +777,8 @@ void computeHaarLikeFeatures(
 				for(int l2 = 1; l2 <= nCols-j-l1; l2++)
 				for(int l3 = 1; l3 <= nCols-j-l1-l2; l3++){
 					//make these lengths more intelligible
-					Vector3i lengths;
-					lengths << l1, l2, l3;
+                    Row<int> lengths;
+                    lengths << l1 << l2 << l3;
 
 					//now go for the feature
 					float feature = 0;
@@ -804,7 +794,7 @@ void computeHaarLikeFeatures(
 							continue;
 						for(int k = 0; k < 3; k++){
 							int factor = pow(-1., k);
-							int advance = k == 0 ? 0 : lengths.head(k).sum();
+                            int advance = k == 0 ? 0 : accu(lengths.head(k));
 							feature += factor*(float)sumImagePart(integralImage, i, j+advance, ir, lengths[k]);
 						}
 					}
@@ -837,8 +827,8 @@ void computeHaarLikeFeatures(
 				for(int l2 = 1; l2 <= nRows-i-l1; l2++)
 				for(int l3 = 1; l3 <= nRows-i-l1-l2; l3++){
 					//make these lengths more intelligible
-					Vector3i lengths;
-					lengths << l1, l2, l3;
+                    Row<int> lengths;
+                    lengths << l1 << l2 << l3;
 
 					//now go for the feature
 					float feature = 0;
@@ -855,7 +845,7 @@ void computeHaarLikeFeatures(
 							continue;
 						for(int k = 0; k < 3; k++){
 							int factor = pow(-1., k);
-							int advance = k == 0 ? 0 : lengths.head(k).sum();
+                            int advance = k == 0 ? 0 : accu(lengths.head(k));
 							feature += factor*(float)sumImagePart(integralImage, i+advance, j, lengths[k], jr);
 						}
 					}
@@ -921,8 +911,8 @@ void computeHaarLikeFeatures(
 	}
 
 	//put all the features into a single vector
-	features = new VectorXf[1];
-	features[0].setZero(featureCount);
+    features = new Row<float>[1];
+    features[0] = zeros<Row<float>>(featureCount);
 	//count down rather than up because of stack
 	for(int k = featureCount -1; k >= 0; k-- ){
 		features[0](k) = stack.top();
@@ -939,11 +929,11 @@ void rotateCoordinate(
 ,	int & output_i
 ,	int & output_j
 ){
-	MatrixXf rotMatrix(2,2);
-	rotMatrix << cos(theta), sin(theta),
-		  -1*sin(theta), cos(theta);
-	Vector2f coordinate;
-	coordinate << input_j - center_j, input_i - center_i;
+    Mat<float> rotMatrix(2,2);
+    rotMatrix << cos(theta) << sin(theta) << endr
+              << -1*sin(theta) << cos(theta);
+    Row<float> coordinate;
+    coordinate << input_j - center_j << input_i - center_i;
 	coordinate = rotMatrix*coordinate;
 	output_i = coordinate(1) + center_i;
 	output_j = coordinate(0) + center_j;
@@ -957,11 +947,11 @@ void rotateImage(
 ,	int & center_j
 ){
 	int nRows, nCols, nChannels;
-	MatrixXf * image = NULL;
+    Mat<float> * image = NULL;
 	imread(infile, nRows, nCols, nChannels, image, true);
 	int imsize = nRows*nCols;
-	MatrixXf * rotated = new MatrixXf [1];
-	rotated[0].setZero(nRows, nCols);
+    Mat<float> * rotated = new Mat<float> [1];
+    rotated[0] = zeros<Mat<float>>(nRows, nCols);
 	center_i = nRows/2;
 	center_j = nCols/2;
 	#pragma omp parallel for schedule(static)

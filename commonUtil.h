@@ -25,15 +25,13 @@
 #ifndef COMMONUTIL_H
 #define COMMONUTIL_H
 
-#include <Eigen/Dense>
 #include <string>
 #include <vector>
 #include <utility>
+#include <armadillo>
 
 using namespace std;
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,Dynamic> MatrixXld;
-
+using namespace arma;
 
 /**
  * @brief print an error message and then quit
@@ -60,7 +58,7 @@ void imread(
 ,	int & nRows
 ,	int & nCols
 ,	int & nChannels
-,	MatrixXf *& image
+,	Mat<float> *& image
 ,	bool outputGray
 );
 
@@ -76,7 +74,7 @@ void imread(
  */
 void imwrite(
 		const char * fileName
-, 		MatrixXf * image
+, 		Mat<float> * image
 , 		int nChannels
 );
 
@@ -87,8 +85,8 @@ void imwrite(
  * @return integralImage integral image
  */
 void buildIntegralImage(
-	MatrixXf & image
-,	MatrixXld & integralImage
+    Mat<float> & image
+,	Mat<double> & integralImage
 );
 
 /**
@@ -102,7 +100,7 @@ void buildIntegralImage(
  * @return the sum
  */
 long double sumImagePart(
-	MatrixXld & integralImage
+    Mat<double> & integralImage
 ,	int ui
 ,	int uj
 ,	int ir
@@ -122,7 +120,7 @@ long double sumImagePart(
 int pathFile2charArray(
 	const char * pathFile
 ,	char **& addr
-,	VectorXi * blackList
+,	Row<int> * blackList
 ,	int sign
 );
 
@@ -137,8 +135,8 @@ int pathFile2charArray(
  */
 int readImagesFromPathFile(
 	const char * pathFile
-,	MatrixXf ** & images
-,	VectorXi * blackList
+,	Mat<float> ** & images
+,	Row<int> * blackList
 ,	int sign
 );
 
@@ -150,7 +148,7 @@ int readImagesFromPathFile(
  * @param index which
  */
 void writeToDisk(
-	VectorXf & dataVector
+    Row<float> & dataVector
 ,	char const * prefix
 ,	int index
 );
@@ -199,7 +197,7 @@ bool fileExist(
 vector< pair<float, int> > * writeOrganizedFeatures(
 	int featureCount
 ,	int sampleCount
-,	RowVectorXf * & featureVectors
+,	Row<float> * & featureVectors
 );
 
 /**

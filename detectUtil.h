@@ -22,14 +22,13 @@
  * @author Yi-Qing WANG <yiqing.wang@polytechnique.edu>
  */
 
-#include <Eigen/Dense>
+#include <armadillo>
 #include <vector>
 #include "TrainExamples.h"
 
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,Dynamic> MatrixXld;
+using namespace arma;
 
-struct square{
+struct rect{
 	int pos_i;
 	int pos_j;
 	int side;
@@ -43,7 +42,7 @@ struct square{
  * @param the return image's column numbers
  * @return the converted image
  */
-MatrixXf * convertToColor(
+Mat<float> * convertToColor(
 	const char * inputName
 ,	int & nRows
 ,	int & nCols
@@ -56,8 +55,8 @@ MatrixXf * convertToColor(
  * @param cascade returned cascade
  * @return tweaks that go with the cascade
  */
-VectorXf readInCascade(
-	vector<stumpRule> *& cascade
+Row<float> readInCascade(
+    vector<stumpRule> *& cascade
 );
 
 /**
@@ -83,7 +82,7 @@ void postProcessing(
 	int nRows
 ,	int nCols
 ,	float nFriends
-,	vector<square> & areas
+,	vector<rect> & areas
 );
 
 /**
@@ -94,7 +93,7 @@ void postProcessing(
  */
 void highlight(
 	const char * inputName
-,	vector<square> & areas
+,	vector<rect> & areas
 ,	int PPMode
 ,	float nFriends
 );
@@ -111,10 +110,10 @@ void highlight(
  * @return true if it's a face and false otherwise
  */
 bool detectFace(
-	square const & area
-,	MatrixXld & integralImage
+    rect const & area
+,	Mat<double> & integralImage
 ,	double varianceNormalizer
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 ,	vector<stumpRule> const * cascade
 ,	int defaultLayerNumber
 );
@@ -130,8 +129,8 @@ bool detectFace(
  */
 double computeFeature(
 	int featureIndex
-,	square const & area
-,	MatrixXld & integralImage
+,	rect const & area
+,	Mat<double> & integralImage
 ,	bool removeMean
 );
 
@@ -155,7 +154,7 @@ void scan(
  * @return via the image variable
  */
 void gaussianSmoothing(
-		MatrixXf * image
+        Mat<float> * image
 ,		float sigma
 );
 
@@ -183,7 +182,7 @@ inline float gaussianKernel(
  * @return the blurred image via the image variable
  */
 void gaussianRowSmoothing(
-		MatrixXf & image
+        Mat<float> & image
 ,		float sigma
 ,		int row
 ,		int nRows
@@ -200,11 +199,11 @@ void gaussianRowSmoothing(
  * @return true if image can be shrunk into a good sized false positive example (returned via the image variable) and false otherwise
  */
 bool zoomOutNegative(
-	MatrixXf *& image
+    Mat<float> *& image
 ,	int shrinkedSize
 ,	int defaultLayerNumber
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 );
 
 /**
@@ -217,10 +216,10 @@ bool zoomOutNegative(
  * @return true if it's a face and false otherwise
  */
 bool exampleScan(
-	MatrixXf & example
+    Mat<float> & example
 ,	int defaultLayerNumber
 ,	vector<stumpRule> const * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 );
 
 /**
@@ -238,8 +237,8 @@ void tscan(
 ,	int & nCols
 ,	int defaultLayerNumber
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
-,	vector<square> & toMark
+,	Row<float> & tweaks
+,	vector<rect> & toMark
 );
 
 /**
@@ -252,8 +251,8 @@ void tscan(
  * @param inTrain am I in the training mode
  */
 void computeHaarLikeFeatures(
-		MatrixXf & image
-,		VectorXf *& features
+        Mat<float> & image
+,		Row<float> *& features
 ,		const char * toFile
 ,		bool enforceShape
 ,		bool inTrain
@@ -278,7 +277,7 @@ void rotateImage(
 );
 
 bool isLegal(
-	square & area
+    rect & area
 ,	int nRows
 ,	int nCols
 );

@@ -20,9 +20,8 @@ HEADERS += commonUtil.h \
            connected.h \
            Detector.h \
            detectUtil.h \
+           TrainExamples.h \
            io_png.h
 
 LIBS += -lboost_system -lboost_program_options -larmadillo -lpng -lopencv_core \
--lopencv_highgui -lopencv_imgproc
-
-INCLUDEPATH += /usr/include/eigen3
+-lopencv_highgui -lopencv_imgproc -larmadillo

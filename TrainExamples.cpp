@@ -34,8 +34,6 @@
 #define POSITIVE 0
 
 using namespace std;
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,1> VectorXld;
 
 //delete blackListed entries and read in all the rest
 //if there aren't enough negative examples, get some more from the negative image pool
@@ -46,9 +44,9 @@ TrainExamples::TrainExamples(
 ,	const char * negativeImages
 ,	int numberNegatives
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 ,	int layerCount
-,	VectorXi * blackList
+,	Row<int> * blackList
 ,	const char * toFile
 ,	bool trainMode
 ,	bool allInMemory
@@ -57,14 +55,14 @@ TrainExamples::TrainExamples(
 	inTrain = trainMode;
 
 	//cull false negative
-	MatrixXf ** positives = NULL;
+    Mat<float> ** positives = NULL;
 	nPositives = readImagesFromPathFile(positiveExamples, positives, blackList, POSITIVE);
 	int patchSize = positives[0][0].rows();
 
 	//read in good negatives and get more if necessary
 	negativeImagePaths = negativeImages;
 	nNegatives = numberNegatives;
-	MatrixXf ** negatives = sampleNegatives(patchSize, cascade, tweaks, layerCount, negativeExamples, blackList);
+    Mat<float> ** negatives = sampleNegatives(patchSize, cascade, tweaks, layerCount, negativeExamples, blackList);
 
 	//final account
 	sampleCount = nPositives + nNegatives;
@@ -98,15 +96,15 @@ TrainExamples::TrainExamples(
 
 		//single out the first example to get the featureCount
 		//and avoid multiple writing: blackList only NULL at the first round (see calcEmpiricalError)
-		VectorXf * featureVector = NULL;
+        Row<float> * featureVector = NULL;
 	 	computeHaarLikeFeatures(positives[0][0], featureVector, toFile, enforceShape, blackList == NULL);
 		delete [] positives[0];
 		featureCount = featureVector[0].size();
 
 		//choose between memory or disk for data storage
-		RowVectorXf * formattedFeatureVectors = NULL;
+        RowRow<float> * formattedFeatureVectors = NULL;
 		if(allInMemory){
-			formattedFeatureVectors = new RowVectorXf [featureCount];
+            formattedFeatureVectors = new RowRow<float> [featureCount];
 			for(int f = 0; f < featureCount; f++){
 				formattedFeatureVectors[f].setZero(sampleCount);
 				formattedFeatureVectors[f][0] = featureVector[0][f];
@@ -118,7 +116,7 @@ TrainExamples::TrainExamples(
 		//now that the featureCount is known, go parallel for the other examples
 		#pragma omp parallel for schedule(static)
 		for(int exampleIndex = 1; exampleIndex < sampleCount; exampleIndex++){
-			VectorXf * featureVector = NULL;
+            Row<float> * featureVector = NULL;
 			if(exampleIndex < nPositives){
 	 			computeHaarLikeFeatures(positives[exampleIndex][0], featureVector, toFile, enforceShape, false);
 				delete [] positives[exampleIndex];
@@ -141,7 +139,7 @@ TrainExamples::TrainExamples(
 	}else{
 		//here we deal with the validation set
 		labels.setZero(sampleCount);
-		validationExamples = new MatrixXf[sampleCount];
+        validationExamples = new Mat<float>[sampleCount];
 		//don't learn from the validation data, hence a simpler initialisation
 		#pragma omp parallel for schedule(static)
 		for(int exampleIndex = 0; exampleIndex < sampleCount; exampleIndex++){
@@ -168,23 +166,23 @@ TrainExamples::~TrainExamples(){
 
 
 //sample negative examples from images without human subjects
-MatrixXf ** TrainExamples::sampleNegatives(
+Mat<float> ** TrainExamples::sampleNegatives(
 	int patchSize
 ,	vector<stumpRule> * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 ,	int layerCount
 ,	const char * negativeExamples
-,	VectorXi * blackList
+,	Row<int> * blackList
 ){
-	MatrixXf ** existingNegatives = NULL;
+    Mat<float> ** existingNegatives = NULL;
 	int nExistingNegatives = readImagesFromPathFile(negativeExamples, existingNegatives, blackList, NEGATIVE);
-	MatrixXf ** goodNegatives = NULL;
+    Mat<float> ** goodNegatives = NULL;
 	if(nNegatives <= nExistingNegatives){
 		nNegatives = nExistingNegatives;
 		return existingNegatives;
 	}else{
 		//sample some negatives to add to the negative pool
-		goodNegatives = new MatrixXf * [nNegatives];
+        goodNegatives = new Mat<float> * [nNegatives];
 		for(int i = 0; i < nExistingNegatives; i++)
 			goodNegatives[i] = existingNegatives[i];
 		delete [] existingNegatives;
@@ -201,11 +199,11 @@ MatrixXf ** TrainExamples::sampleNegatives(
 
 	int enough = nExistingNegatives;
 	//those images with no more good negatives to draw
-	VectorXi * uselessImages = new VectorXi [2];
+    Row<int> * uselessImages = new Row<int> [2];
 	uselessImages[NEGATIVE].setZero(nImages);
 	for(int k = 0; k < nImages && enough < nNegatives; k++){
 		const char * file = addr[k];
-		vector<square> toMark;
+        vector<rect> toMark;
 		int nRows, nCols, nChannels;
 		tscan(file, nRows, nCols, layerCount, cascade, tweaks, toMark);
 		int falsePositiveRemaining = toMark.size();
@@ -217,11 +215,11 @@ MatrixXf ** TrainExamples::sampleNegatives(
 		if(VERBOSE)
 			cout << "Looking at " << file << " with " << falsePositiveRemaining << " false positive windows.\n";
 		//let's try to make these false negatives into good examples
-		MatrixXf * gray = NULL;
+        Mat<float> * gray = NULL;
 		imread(file, nRows, nCols, nChannels, gray, true);
 		for(int s = 0; s < falsePositiveRemaining && enough < nNegatives; s++){
-			MatrixXf * candidate = new MatrixXf [1];
-			square window = toMark[s];
+            Mat<float> * candidate = new Mat<float> [1];
+            rect window = toMark[s];
 			candidate[0] = gray[0].block(window.pos_i, window.pos_j, window.side, window.side);
 			if(zoomOutNegative(candidate, patchSize, layerCount, cascade, tweaks)){
 				goodNegatives[enough] = candidate;
@@ -229,7 +227,7 @@ MatrixXf ** TrainExamples::sampleNegatives(
 				char buffer[100];
 				const char * testFlag = inTrain ? "training" : "validation";
 				sprintf(buffer, "%s/%s_%d_%d.png", "newlyCollectedNegatives", testFlag, layerCount, enough);
-				MatrixXf * acceptedCandidate = new MatrixXf [1];
+                Mat<float> * acceptedCandidate = new Mat<float> [1];
 				acceptedCandidate[0] = candidate[0];
 				imwrite(buffer, acceptedCandidate, 1);
 				string line(buffer);
@@ -262,9 +260,8 @@ MatrixXf ** TrainExamples::sampleNegatives(
 	return goodNegatives;
 }
 
-void TrainExamples::predictLabel(
-	float decisionTweak
-,	RowVectorXi & prediction
+void TrainExamples::predictLabel(float decisionTweak
+,	Row<int> &prediction
 ,	bool onlyMostRecent
 ){
 	int committeeSize = committee.size();
@@ -472,15 +469,15 @@ void TrainExamples::adaboost(){
 	committee.push_back(rule);
 
 	//how it fares
-	RowVectorXi prediction(sampleCount);
+    RowRow<int> prediction(sampleCount);
 	predictLabel(
 		/*decisionTweak*/ 0
 	,	prediction
 	,	/*onlyMostRecent*/ true);
-	VectorXi agree = labels.cwiseProduct(prediction.transpose());
+    Row<int> agree = labels.cwiseProduct(prediction.transpose());
 
 	//update weights
-	VectorXld weightUpdate;
+    Row<double> weightUpdate;
 	weightUpdate.setOnes(sampleCount);
 	bool errorFlag = false;
 	for(int exampleIndex = 0; exampleIndex < sampleCount; exampleIndex++){
@@ -505,7 +502,7 @@ void TrainExamples::adaboost(){
 
 	//print some statistics
 	if(VERBOSE){
-		VectorXf tweaks;
+        Row<float> tweaks;
 		tweaks.setZero(1);
 		float falsePositive = 0;
 		float detectionRate = 0;
@@ -521,9 +518,9 @@ void TrainExamples::adaboost(){
 }
 
 //validation procedure mainly for test case
-VectorXi * TrainExamples::calcEmpiricalError(
+Row<int> * TrainExamples::calcEmpiricalError(
 	vector<stumpRule> const * cascade
-,	VectorXf & tweaks
+,	Row<float> & tweaks
 ,	int layerCount
 ,	float & falsePositive
 ,	float & detectionRate
@@ -531,14 +528,14 @@ VectorXi * TrainExamples::calcEmpiricalError(
 ){
 	int nFalsePositive = 0;
 	int nFalseNegative = 0;
-	VectorXi * blackList = hasReturn ? new VectorXi[2] : NULL;
+    Row<int> * blackList = hasReturn ? new Row<int>[2] : NULL;
 	if(hasReturn){
 		blackList[POSITIVE].setZero(nPositives);
 		blackList[NEGATIVE].setOnes(nNegatives);
 	}
 	if(inTrain){
 		//initially let all be positive
-		RowVectorXi verdicts, layerPrediction;
+        RowRow<int> verdicts, layerPrediction;
 		verdicts.setOnes(sampleCount);
 		layerPrediction.setZero(sampleCount);
 		for(int layer = 0; layer < layerCount; layer++){
@@ -550,7 +547,7 @@ VectorXi * TrainExamples::calcEmpiricalError(
 		}
 
 		//evaluate prediction errors
-		VectorXi agree = labels.cwiseProduct(verdicts.transpose());
+        Row<int> agree = labels.cwiseProduct(verdicts.transpose());
 		for(int exampleIndex = 0; exampleIndex < sampleCount; exampleIndex++){
 			if(agree[exampleIndex] < 0){
 				if(exampleIndex < nPositives){

@@ -25,14 +25,13 @@
 #ifndef TRAINEXAMPLES_H
 #define TRAINEXAMPLES_H
 
-#include <Eigen/Dense>
 #include <vector>
 #include <utility>
+#include <armadillo>
 #include "commonUtil.h"
 
 using namespace std;
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,1> VectorXld;
+using namespace arma;
 
 /**
  * @brief decision stump definition
@@ -82,13 +81,13 @@ public:
 	long double negativeTotalWeight;
 	long double minWeight;
 	long double maxWeight;
-	VectorXld weights;
-	VectorXi labels;
+    Row<double> weights;
+    Row<int> labels;
 	vector< pair<float, int> > * ascendingFeatures;
 	int featureCount;
 	vector<stumpRule> committee;
 	const char * negativeImagePaths;
-	MatrixXf * validationExamples;
+    Mat<float> * validationExamples;
 
 	/**
 	 * @brief constructor to use if you have enough memory
@@ -108,9 +107,9 @@ public:
 	,	const char * negativeImages
 	,	int numberNegatives
 	,	vector<stumpRule> * cascade
-	,	VectorXf & tweaks
+    ,	Row<float> & tweaks
 	,	int layerCount
-	,	VectorXi * blackList
+    ,	Row<int> * blackList
 	,	const char * toFile
 	,	bool trainMode
 	,	bool allInMemory
@@ -128,9 +127,9 @@ public:
 	 * @return detectionRate
 	 * @param hasReturn whether to return a blackList pointing to false negative and true negatives
 	 */
-	VectorXi * calcEmpiricalError(
+    Row<int> * calcEmpiricalError(
 		vector<stumpRule> const * cascade
-	,	VectorXf & tweaks
+    ,	Row<float> & tweaks
 	,	int layerCount
 	,	float & falsePositive
 	,	float & detectionRate
@@ -146,13 +145,13 @@ private:
 	/**
 	 * @brief get some extra negatives if necessary
 	 */
-	MatrixXf ** sampleNegatives(
+    Mat<float> ** sampleNegatives(
 		int patchSize
 	,	vector<stumpRule> * cascade
-	,	VectorXf & tweaks
+    ,	Row<float> & tweaks
 	,	int layerCount
 	,	const char * negativeExamples
-	,	VectorXi * blackList
+    ,	Row<int> * blackList
 	);
 	/**
 	 * @brief what makes one stump better than the other
@@ -205,7 +204,7 @@ private:
 	 */
 	void predictLabel(
 		float thresholdTweak
-	, 	RowVectorXi & prediction
+    , 	Row<int> & prediction
 	, 	bool onlyMostRecent
 	);
 };

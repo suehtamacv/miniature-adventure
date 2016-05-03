@@ -33,15 +33,13 @@
 #include "io_png.h"
 #include "commonUtil.h"
 #include "Detector.h"
-#include <Eigen/Dense>
 
 #define VERBOSE true
 #define UNIT 1e2
 #define STORAGE "trainData"
 
 using namespace std;
-using namespace Eigen;
-typedef Matrix<long double,Dynamic,Dynamic> MatrixXld;
+using namespace arma;
 
 //fail and messaging
 void fail(string const & message){
@@ -74,12 +72,11 @@ void times(const char * which){
 
 //read in an image in two modes
 //selectable with outputGray flag
-void imread(
-	const char * fileName
+void imread(const char * fileName
 ,	int & nRows
 ,	int & nCols
 ,	int & nChannels
-,	MatrixXf *& image
+,	Mat<float> *&image
 ,	bool outputGray
 ){
 	//readin mode selection
@@ -102,24 +99,23 @@ void imread(
 
 
 	//input stream assumes row-major while Eigen defaults to column-major
-	Map<MatrixXf> parallel(pixelStream, nCols, nRows*nChannels);
-	image = new MatrixXf [nChannels];
+    Map<MatrixXf> parallel(pixelStream, nCols, nRows*nChannels);
+    image = new Mat<float> [nChannels];
 	for( int ch = 0; ch < nChannels; ch++ )
-		image[ch] = parallel.block(0, ch*nRows, nCols, nRows).transpose();
+        image[ch] = parallel.block(0, ch*nRows, nCols, nRows).t();
 
 	//release
 	free(pixelStream);
 }
 
 //image write in MATLAB style, after which MatrixXf * image is released
-void imwrite(
-	const char * fileName
-, 	MatrixXf * image
+void imwrite(const char * fileName
+, 	Mat<float> *image
 , 	int nChannels
 ){
 	//allocate
-	int nCols = image[0].cols();
-	int nRows = image[0].rows();
+    int nCols = image[0].n_cols;
+    int nRows = image[0].n_rows;
 	int pixelsPerChannel = nCols*nRows;
 	float * output = new float [pixelsPerChannel*nChannels];
 
@@ -143,11 +139,11 @@ void imwrite(
 
 //compute an integral image in linear time
 void buildIntegralImage(
-	MatrixXf & image
-,	MatrixXld & integralImage
+    Mat<float> & image
+,	Mat<double> & integralImage
 ){
-	int nRows = image.rows();
-	int nCols = image.cols();
+    int nRows = image.n_rows;
+    int nCols = image.n_cols;
 	//O(n) complexity: however no parallel should be used
 	for(int i = 0; i < nRows; i++)
 		for(int j = 0; j < nCols; j++){
@@ -159,8 +155,7 @@ void buildIntegralImage(
 }
 
 //inverse of buildIntegralImage()
-long double sumImagePart(
-	MatrixXld & integralImage
+long double sumImagePart(Mat<double> &integralImage
 ,	int ui
 ,	int uj
 ,	int ir 	//column length
@@ -179,10 +174,9 @@ long double sumImagePart(
 //convert the pathFile to char array and return path count
 //if a valid blackList is provided, delete blackListed (1) samples
 //update the second argument while others are purely inputs
-int pathFile2charArray(
-	const char * pathFile
+int pathFile2charArray(const char * pathFile
 ,	char **& addr
-,	VectorXi * blackList
+,	Row<int> *blackList
 ,	int sign
 ){
 	//delete these blackListed paths
@@ -257,7 +251,7 @@ int pathFile2charArray(
 		//first loop just count the number of lines in the file
 		if( loop == 0 ){
 			//remove those blackListed
-			pathCount = blackList == NULL ? total : total - blackList[sign].sum();
+            pathCount = blackList == NULL ? total : total - accu(blackList[sign]);
 
 			//now delete samples if necessary
 			if(!doNothing){
@@ -285,10 +279,9 @@ int pathFile2charArray(
 //collect training image set provided by a pathFile
 //plus a blackList
 //and return these images in matrix form
-int readImagesFromPathFile(
-	const char * pathFile
-,	MatrixXf ** & images
-,	VectorXi * blackList
+int readImagesFromPathFile(const char * pathFile
+,	Mat<float> ** & images
+,	Row<int> *blackList
 ,	int sign
 ){
 	char ** addr = NULL;
@@ -304,7 +297,7 @@ int readImagesFromPathFile(
 	//g++ complains about uninitialized values
 	int rnRows = 0;
 	int rnCols = 0;
-	images = new MatrixXf * [sampleCount];
+    images = new Mat<float> * [sampleCount];
 	for(int sample = 0; sample < sampleCount; sample++){
 		const char * file = addr[sample];
 		imread(file, nRows, nCols, nChannels, images[sample], true);
@@ -331,8 +324,7 @@ int readImagesFromPathFile(
 }
 
 //write out a vector to disk if there isn't enough memory available
-void writeToDisk(
-	VectorXf & dataVector
+void writeToDisk(Row<float> &dataVector
 ,	char const * prefix
 ,	int index
 ){
@@ -361,8 +353,8 @@ void writeToDisk(
 		int length = unit;
 		if(piece == pieceCount - 1 && remainder)
 			length = remainder;
-		output << dataVector.segment(start, length) << endl;
-		output.close();
+        output << dataVector.rows(start, start + length - 1) << endl;
+        output.close();
 	}
 }
 
@@ -427,10 +419,9 @@ bool myPairOrder(
 
 //read in a feature and put them in ascending order
 //and record at the same time the permuted example order
-vector< pair<float, int> > * writeOrganizedFeatures(
-	int featureCount
+vector< pair<float, int> > * writeOrganizedFeatures(int featureCount
 ,	int sampleCount
-,	RowVectorXf * & featureVectors
+,	Row<float> *&featureVectors
 ){
 	bool allInMemory = featureVectors == NULL ? false : true;
 	vector< pair<float, int> > * toReturn = NULL;
@@ -458,11 +449,9 @@ vector< pair<float, int> > * writeOrganizedFeatures(
 			toReturn[feature] = ascendingFeatures;
 		}else{
 			//transfer to disk
-			VectorXf permutedFeatures;
-			permutedFeatures.setZero(sampleCount);
-			VectorXf permutedSamples;
-			permutedSamples.setZero(sampleCount);
-			for(int k = 0; k < sampleCount; k++){
+            Row<float> permutedFeatures = zeros<Row<float>>(sampleCount);
+            Row<float> permutedSamples = zeros<Row<float>>(sampleCount);
+            for(int k = 0; k < sampleCount; k++){
 				permutedFeatures(k) = ascendingFeatures[k].first;
 				permutedSamples(k) = ascendingFeatures[k].second;
 			}
