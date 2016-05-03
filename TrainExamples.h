@@ -47,7 +47,7 @@ using namespace arma;
 struct stumpRule
 {
     int featureIndex;
-    long double weightedError;
+    long double logWeightedError;
     double threshold;
     float margin;
     int toggle;

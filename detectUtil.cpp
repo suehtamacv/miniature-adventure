@@ -44,7 +44,7 @@
 #define ROTATE_DEGREE 5
 #define WINDOW_SCALE_MULTIPLIER 1.5
 
-bool mustRotate = true;
+bool mustRotate = false;
 
 using namespace std;
 using namespace arma;
@@ -179,7 +179,7 @@ Row<float> readInCascade(
             //set a new stump
             stumpRule newcomer;
             newcomer.featureIndex = rule[0];
-            newcomer.weightedError = rule[1];
+            newcomer.logWeightedError = log(1/rule[1] -1);
             newcomer.threshold = rule[2];
             newcomer.toggle = rule[3];
             cascade[layer].push_back(newcomer);
@@ -360,16 +360,8 @@ bool detectFace(rect const & area
             {
             double featureValue = computeFeature(committee[rule].featureIndex, area, integralImage, true)/varianceNormalizer;
             double vote = (featureValue > committee[rule].threshold ? 1 : -1)*committee[rule].toggle+tweaks[layer];
-            if(committee[rule].weightedError == 0)
-                {
-                //very well then
-                if(rule == 0)
-                    return vote > 0 ? true : false;
-                else
-                    fail("Find an invalid rule.");
-                }
             //no 0.5 since only sign matters
-            prediction += vote*log(1/committee[rule].weightedError -1);
+            prediction += vote*committee[rule].logWeightedError;
             }
         if(prediction < 0)
             return false;
@@ -578,16 +570,7 @@ void scan(
             if(isLegal(combined[i], nRows, nCols))
                 toMark.push_back(combined[i]);
         }
-    else
-        {
-        toMark = combined;
-        }
-    //four modes of post-processing
-    for(int ppMode = 0; ppMode < 4; ppMode++)
-        {
-        combined = toMark;
-        highlight(file, combined, ppMode, required_nFriends);
-        }
+    highlight(file, combined, 1, required_nFriends);
 }
 
 void tscan(const char * file
