@@ -22,6 +22,8 @@
  * @author Yi-Qing WANG <yiqing.wang@polytechnique.edu>
  */
 
+#define ARMA_NO_DEBUG
+
 #include <armadillo>
 #include <vector>
 #include "TrainExamples.h"

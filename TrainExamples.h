@@ -25,6 +25,8 @@
 #ifndef TRAINEXAMPLES_H
 #define TRAINEXAMPLES_H
 
+#define ARMA_NO_DEBUG
+
 #include <vector>
 #include <utility>
 #include <armadillo>

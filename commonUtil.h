@@ -25,6 +25,8 @@
 #ifndef COMMONUTIL_H
 #define COMMONUTIL_H
 
+#define ARMA_NO_DEBUG
+
 #include <string>
 #include <vector>
 #include <utility>
