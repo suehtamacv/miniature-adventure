@@ -97,12 +97,11 @@ void imread(const char * fileName
 	if(VERBOSE && false)
 		cout << "INFO: read in " << fileName << " of dimension: (" << ny << " , " << nx << " , " << nChannels << ")" << end << endl;
 
-
-	//input stream assumes row-major while Eigen defaults to column-major
-    Map<MatrixXf> parallel(pixelStream, nCols, nRows*nChannels);
+    //input stream assumes row-major while Eigen defaults to column-major
+    Mat<float> parallel(pixelStream, nCols, nRows*nChannels);
     image = new Mat<float> [nChannels];
 	for( int ch = 0; ch < nChannels; ch++ )
-        image[ch] = parallel.block(0, ch*nRows, nCols, nRows).t();
+        image[ch] = parallel(span(0, nCols-1),span(ch*nRows, ch*nRows + nRows - 1)).t();
 
 	//release
 	free(pixelStream);

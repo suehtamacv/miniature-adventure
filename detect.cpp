@@ -32,17 +32,16 @@ using namespace std;
 
 #define MIN_FRIENDS 3
 int main(){
-    cv::VideoCapture webcamStream(0);
+    /*cv::VideoCapture webcamStream(0);
     if (!webcamStream.isOpened()) {
         return EXIT_FAILURE;
-    }
+    }*/
 
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
 
     while (true) {
-        cv::Mat cameraFrame;
-        webcamStream.read(cameraFrame);
+        cv::Mat cameraFrame = cv::imread("test.png");
 
         cv::imwrite("frame.png", cameraFrame);
         scan("frame.png", defaultLayerNumber, required_nFriends);

@@ -641,7 +641,7 @@ void postProcessing(
 	int nPixels = nRows*nCols;
 	int * connectedParts = new int [nPixels];
 	ConnectedComponents cc(10);
-      	cc.connected( partition.data(), connectedParts, nRows, nCols, std::equal_to<int>(), true );
+        cc.connected( partition.mem, connectedParts, nRows, nCols, std::equal_to<int>(), true );
 	//how many disconnected parts and how big are they
 	vector<int> myVector(connectedParts, connectedParts+nPixels);
 	sort(myVector.begin(), myVector.end());
@@ -665,7 +665,7 @@ void postProcessing(
 	flags.resize(nowAt);
 	for(int i = 0; i < nowAt; i++)
 		flags[i] = true;
-	Map<MatrixXi> fineParts(connectedParts, nRows, nCols);
+    Mat<int> fineParts(connectedParts, nRows, nCols);
     vector<rect> representatives;
 	vector<float> ratios;
 	for(int w = 0; w < nWindows; w++){
@@ -932,7 +932,7 @@ void rotateCoordinate(
     Mat<float> rotMatrix(2,2);
     rotMatrix << cos(theta) << sin(theta) << endr
               << -1*sin(theta) << cos(theta);
-    Row<float> coordinate;
+    Col<float> coordinate;
     coordinate << input_j - center_j << input_i - center_i;
 	coordinate = rotMatrix*coordinate;
 	output_i = coordinate(1) + center_i;

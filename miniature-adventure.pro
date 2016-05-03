@@ -23,5 +23,10 @@ HEADERS += commonUtil.h \
            TrainExamples.h \
            io_png.h
 
+INSTALL_HEITOR.path = $$OUT_PWD/
+INSTALL_HEITOR.files = test.png
+
+INSTALLS += INSTALL_HEITOR
+
 LIBS += -lboost_system -lboost_program_options -larmadillo -lpng -lopencv_core \
 -lopencv_highgui -lopencv_imgproc -larmadillo
