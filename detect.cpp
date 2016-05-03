@@ -40,18 +40,7 @@ int main(){
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
 
-    while (true) {
-        cv::Mat cameraFrame = cv::imread("test.png");
-
-        cv::imwrite("frame.png", cameraFrame);
-        scan("frame.png", defaultLayerNumber, required_nFriends);
-
-        cv::Mat detectFrame = cv::imread("detectedraw.png");
-        cv::imshow("detect", detectFrame);
-
-        if (cv::waitKey(30) >= 0)
-        break;
-    }
+    scan("test.png", defaultLayerNumber, required_nFriends);
 
     return 0;
 }
