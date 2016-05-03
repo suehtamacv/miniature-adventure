@@ -35,11 +35,6 @@ using namespace std;
 #define MIN_FRIENDS 3
 int main()
 {
-    /*cv::VideoCapture webcamStream(0);
-    if (!webcamStream.isOpened()) {
-        return EXIT_FAILURE;
-    }*/
-
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
 

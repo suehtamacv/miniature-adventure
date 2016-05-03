@@ -43,6 +43,8 @@
 #define EXAMPLE_SIZE 24
 #define ROTATE_DEGREE 5
 #define WINDOW_SCALE_MULTIPLIER 1.5
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define max(a,b) (((a) > (b)) ? (a) : (b))
 
 bool mustRotate = false;
 
@@ -225,7 +227,7 @@ bool isSkinPixel(
     int R = image[0](row, col);
     int G = image[1](row, col);
     int B = image[2](row, col);
-    int diff = std::max(R, max(G, B))- std::min(R, min(G, B));
+    int diff = max(R, max(G, B))- min(R, min(G, B));
     return R > 95 && G > 40 && B > 20 && R > G && R > B && R-G > 15 && diff > 15;
 }
 
@@ -356,11 +358,11 @@ bool detectFace(rect const & area
         vector<stumpRule> committee = cascade[layer];
         double prediction = 0;
         int committeeSize = committee.size();
+        #pragma omp parallel for schedule (static)
         for(int rule = 0; rule < committeeSize; rule++)
             {
             double featureValue = computeFeature(committee[rule].featureIndex, area, integralImage, true)/varianceNormalizer;
             double vote = (featureValue > committee[rule].threshold ? 1 : -1)*committee[rule].toggle+tweaks[layer];
-            //no 0.5 since only sign matters
             prediction += vote*committee[rule].logWeightedError;
             }
         if(prediction < 0)
@@ -421,7 +423,7 @@ double computeFeature(int featureIndex
     if(pattern == 1)
         {
         //some adjustment to height and width
-        height = std::min(height, area.side - i);
+        height = min(height, area.side - i);
         width = !(width % 2) ? width : width + 1;
         while(width + j > area.side)
             width -= 2;
@@ -436,7 +438,7 @@ double computeFeature(int featureIndex
     else if(pattern == 2)
         {
         //some adjustment
-        height = std::min(height, area.side - i);
+        height = min(height, area.side - i);
         int remainder = width % 3;
         width = !remainder ? width : width + 3 - remainder;
         while(width + j > area.side)
@@ -454,7 +456,7 @@ double computeFeature(int featureIndex
     else if(pattern == 3)
         {
         //some adjustment
-        width = std::min(width, area.side - j);
+        width = min(width, area.side - j);
         height = !(height % 2) ? height : height + 1;
         while(height + i > area.side)
             height -= 2;
@@ -468,7 +470,7 @@ double computeFeature(int featureIndex
     else if(pattern == 4)
         {
         //some adjustment
-        width = std::min(width, area.side - j);
+        width = min(width, area.side - j);
         int remainder = height % 3;
         height = !remainder ? height : height + 3 - remainder;
         while(height + i > area.side)
