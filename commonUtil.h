@@ -54,12 +54,12 @@ void times(const char * which);
  * @return image format image as a matrix
  */
 void imread(
-	const char * fileName
-,	int & nRows
-,	int & nCols
-,	int & nChannels
-,	Mat<float> *& image
-,	bool outputGray
+    const char * fileName
+    ,	int & nRows
+    ,	int & nCols
+    ,	int & nChannels
+    ,	Mat<float> *& image
+    ,	bool outputGray
 );
 
 /**
@@ -73,9 +73,9 @@ void imread(
  * @return image format image as a matrix
  */
 void imwrite(
-		const char * fileName
-, 		Mat<float> * image
-, 		int nChannels
+    const char * fileName
+    , 		Mat<float> * image
+    , 		int nChannels
 );
 
 /**
@@ -86,7 +86,7 @@ void imwrite(
  */
 void buildIntegralImage(
     Mat<float> & image
-,	Mat<double> & integralImage
+    ,	Mat<double> & integralImage
 );
 
 /**
@@ -101,10 +101,10 @@ void buildIntegralImage(
  */
 long double sumImagePart(
     Mat<double> & integralImage
-,	int ui
-,	int uj
-,	int ir
-,	int jr
+    ,	int ui
+    ,	int uj
+    ,	int ir
+    ,	int jr
 );
 
 
@@ -118,10 +118,10 @@ long double sumImagePart(
  * @return number of samples collected
  */
 int pathFile2charArray(
-	const char * pathFile
-,	char **& addr
-,	Row<int> * blackList
-,	int sign
+    const char * pathFile
+    ,	char **& addr
+    ,	Row<int> * blackList
+    ,	int sign
 );
 
 /**
@@ -134,10 +134,10 @@ int pathFile2charArray(
  * @return number of samples collected
  */
 int readImagesFromPathFile(
-	const char * pathFile
-,	Mat<float> ** & images
-,	Row<int> * blackList
-,	int sign
+    const char * pathFile
+    ,	Mat<float> ** & images
+    ,	Row<int> * blackList
+    ,	int sign
 );
 
 /**
@@ -149,8 +149,8 @@ int readImagesFromPathFile(
  */
 void writeToDisk(
     Row<float> & dataVector
-,	char const * prefix
-,	int index
+    ,	char const * prefix
+    ,	int index
 );
 
 /**
@@ -162,17 +162,17 @@ void writeToDisk(
  * @return feature value of this example
  */
 float readFromDisk(
-	char const * prefix
-,	int index
-,	int entry
+    char const * prefix
+    ,	int index
+    ,	int entry
 );
 
 /**
  * @brief an auxiliary function for pair ordering
  */
 bool myPairOrder(
-	const pair<float, int>& one
-,	const pair<float, int>& other
+    const pair<float, int>& one
+    ,	const pair<float, int>& other
 );
 
 /**
@@ -183,8 +183,8 @@ bool myPairOrder(
  * @return true if so, false otherwise
  */
 bool fileExist(
-	const char * fname
-,	bool del = true
+    const char * fname
+    ,	bool del = true
 );
 
 /**
@@ -195,9 +195,9 @@ bool fileExist(
  * @param if you choose to read features from memory instead of disk
  */
 vector< pair<float, int> > * writeOrganizedFeatures(
-	int featureCount
-,	int sampleCount
-,	Row<float> * & featureVectors
+    int featureCount
+    ,	int sampleCount
+    ,	Row<float> * & featureVectors
 );
 
 /**
@@ -207,8 +207,8 @@ vector< pair<float, int> > * writeOrganizedFeatures(
  * @param sampleCount
  */
 void removeFeatures(
-	int featureCount
-,	int sampleCount
+    int featureCount
+    ,	int sampleCount
 );
 
 void removeFile(const char * fname);

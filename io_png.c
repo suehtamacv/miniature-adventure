@@ -147,7 +147,7 @@ static void *read_png_raw(const char *fname,
 
     /* read in some of the signature bytes and check this signature */
     if ((PNG_SIG_LEN != fread(png_sig, 1, PNG_SIG_LEN, fp))
-        || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
+            || 0 != png_sig_cmp(png_sig, (png_size_t) 0, PNG_SIG_LEN))
         return read_png_abort(fp, NULL, NULL);
 
     /*
@@ -155,7 +155,7 @@ static void *read_png_raw(const char *fname,
      * with the default stderr and error handling
      */
     if (NULL == (png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-                                                  NULL, NULL, NULL)))
+                           NULL, NULL, NULL)))
         return read_png_abort(fp, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
@@ -200,51 +200,51 @@ static void *read_png_raw(const char *fname,
      */
     size = *nx * *ny * *nc;
     switch (dtype)
-    {
-    case IO_PNG_U8:
-        if (NULL == (data_u8 =
-                     (unsigned char *) malloc(size * sizeof(unsigned char))))
-            return read_png_abort(fp, &png_ptr, &info_ptr);
-        data = (void *) data_u8;
-        for (k = 0; k < *nc; k++)
         {
-            /* channel loop */
-            data_u8_ptr = data_u8 + (size_t) (*nx * *ny * k);
-            for (j = 0; j < *ny; j++)
-            {
-                /* row loop */
-                row_ptr = row_pointers[j] + k;
-                for (i = 0; i < *nx; i++)
+        case IO_PNG_U8:
+            if (NULL == (data_u8 =
+                             (unsigned char *) malloc(size * sizeof(unsigned char))))
+                return read_png_abort(fp, &png_ptr, &info_ptr);
+            data = (void *) data_u8;
+            for (k = 0; k < *nc; k++)
                 {
-                    /* pixel loop */
-                    *data_u8_ptr++ = (unsigned char) *row_ptr;
-                    row_ptr += *nc;
+                /* channel loop */
+                data_u8_ptr = data_u8 + (size_t) (*nx * *ny * k);
+                for (j = 0; j < *ny; j++)
+                    {
+                    /* row loop */
+                    row_ptr = row_pointers[j] + k;
+                    for (i = 0; i < *nx; i++)
+                        {
+                        /* pixel loop */
+                        *data_u8_ptr++ = (unsigned char) *row_ptr;
+                        row_ptr += *nc;
+                        }
+                    }
                 }
-            }
-        }
-        break;
-    case IO_PNG_F32:
-        if (NULL == (data_f32 = (float *) malloc(size * sizeof(float))))
-            return read_png_abort(fp, &png_ptr, &info_ptr);
-        data = (void *) data_f32;
-        for (k = 0; k < *nc; k++)
-        {
-            /* channel loop */
-            data_f32_ptr = data_f32 + (size_t) (*nx * *ny * k);
-            for (j = 0; j < *ny; j++)
-            {
-                /* row loop */
-                row_ptr = row_pointers[j] + k;
-                for (i = 0; i < *nx; i++)
+            break;
+        case IO_PNG_F32:
+            if (NULL == (data_f32 = (float *) malloc(size * sizeof(float))))
+                return read_png_abort(fp, &png_ptr, &info_ptr);
+            data = (void *) data_f32;
+            for (k = 0; k < *nc; k++)
                 {
-                    /* pixel loop */
-                    *data_f32_ptr++ = (float) *row_ptr;
-                    row_ptr += *nc;
+                /* channel loop */
+                data_f32_ptr = data_f32 + (size_t) (*nx * *ny * k);
+                for (j = 0; j < *ny; j++)
+                    {
+                    /* row loop */
+                    row_ptr = row_pointers[j] + k;
+                    for (i = 0; i < *nx; i++)
+                        {
+                        /* pixel loop */
+                        *data_f32_ptr++ = (float) *row_ptr;
+                        row_ptr += *nc;
+                        }
+                    }
                 }
-            }
+            break;
         }
-        break;
-    }
 
     /* clean up and free any memory allocated, close the file */
     (void) read_png_abort(fp, &png_ptr, &info_ptr);
@@ -296,7 +296,7 @@ unsigned char *read_png_u8_rgb(const char *fname, size_t * nx, size_t * ny)
         /* already RGB */
         return img;
     else
-    {
+        {
         /* convert to RGB */
         unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_end;
 
@@ -309,12 +309,12 @@ unsigned char *read_png_u8_rgb(const char *fname, size_t * nx, size_t * ny)
         ptr_g = img + *nx * *ny;
         ptr_b = img + 2 * *nx * *ny;
         while (ptr_r < ptr_end)
-        {
+            {
             *ptr_g++ = *ptr_r;
             *ptr_b++ = *ptr_r++;
-        }
+            }
         return img;
-    }
+        }
 }
 
 /**
@@ -338,7 +338,7 @@ unsigned char *read_png_u8_gray(const char *fname, size_t * nx, size_t * ny)
         /* already gray */
         return img;
     else
-    {
+        {
         /* convert to gray */
         unsigned char *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
 
@@ -360,7 +360,7 @@ unsigned char *read_png_u8_gray(const char *fname, size_t * nx, size_t * ny)
         /* resize and return the image */
         img = realloc(img, *nx * *ny * sizeof(unsigned char));
         return img;
-    }
+        }
 }
 
 /**
@@ -404,7 +404,7 @@ float *read_png_f32_rgb(const char *fname, size_t * nx, size_t * ny)
         /* already RGB */
         return img;
     else
-    {
+        {
         /* convert to RGB */
         float *ptr_r, *ptr_g, *ptr_b, *ptr_end;
 
@@ -417,12 +417,12 @@ float *read_png_f32_rgb(const char *fname, size_t * nx, size_t * ny)
         ptr_g = img + *nx * *ny;
         ptr_b = img + 2 * *nx * *ny;
         while (ptr_r < ptr_end)
-        {
+            {
             *ptr_g++ = *ptr_r;
             *ptr_b++ = *ptr_r++;
-        }
+            }
         return img;
-    }
+        }
 }
 
 /**
@@ -445,7 +445,7 @@ float *read_png_f32_gray(const char *fname, size_t * nx, size_t * ny)
         /* already gray */
         return img;
     else
-    {
+        {
         /* convert to gray */
         float *ptr_r, *ptr_g, *ptr_b, *ptr_gray, *ptr_end;
 
@@ -467,7 +467,7 @@ float *read_png_f32_gray(const char *fname, size_t * nx, size_t * ny)
         /* resize and return the image */
         img = realloc(img, *nx * *ny * sizeof(float));
         return img;
-    }
+        }
 }
 
 /*
@@ -559,7 +559,7 @@ static int write_png_raw(const char *fname, const void *data,
      * with the default stderr and error handling
      */
     if (NULL == (png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-                                                   NULL, NULL, NULL)))
+                           NULL, NULL, NULL)))
         return write_png_abort(fp, idata, row_pointers, NULL, NULL);
 
     /* allocate/initialize the memory for image information */
@@ -577,26 +577,26 @@ static int write_png_raw(const char *fname, const void *data,
     /* set image informations */
     bit_depth = 8;
     switch (nc)
-    {
-    case 1:
-        color_type = PNG_COLOR_TYPE_GRAY;
-        break;
-    case 2:
-        color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
-        break;
-    case 3:
-        color_type = PNG_COLOR_TYPE_RGB;
-        break;
-    case 4:
-        color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-        break;
-    default:
-        png_destroy_read_struct(&png_ptr, NULL, NULL);
-        free(row_pointers);
-        free(idata);
-        (void) fclose(fp);
-        return -1;
-    }
+        {
+        case 1:
+            color_type = PNG_COLOR_TYPE_GRAY;
+            break;
+        case 2:
+            color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
+            break;
+        case 3:
+            color_type = PNG_COLOR_TYPE_RGB;
+            break;
+        case 4:
+            color_type = PNG_COLOR_TYPE_RGB_ALPHA;
+            break;
+        default:
+            png_destroy_read_struct(&png_ptr, NULL, NULL);
+            free(row_pointers);
+            free(idata);
+            (void) fclose(fp);
+            return -1;
+        }
     interlace = PNG_INTERLACE_ADAM7;
     compression = PNG_COMPRESSION_TYPE_BASE;
     filter = PNG_FILTER_TYPE_BASE;
@@ -613,48 +613,48 @@ static int write_png_raw(const char *fname, const void *data,
      * this involves more memory exchange, but allows a generic loop
      */
     switch (dtype)
-    {
-    case IO_PNG_U8:
-        data_u8 = (unsigned char *) data;
-        for (k = 0; k < nc; k++)
         {
-            /* channel loop */
-            data_u8_ptr = data_u8 + (size_t) (nx * ny * k);
-            idata_ptr = idata + (size_t) k;
-            for (j = 0; j < ny; j++)
-            {
-                /* row loop */
-                for (i = 0; i < nx; i++)
+        case IO_PNG_U8:
+            data_u8 = (unsigned char *) data;
+            for (k = 0; k < nc; k++)
                 {
-                    /* pixel loop */
-                    *idata_ptr = (png_byte) * data_u8_ptr++;
-                    idata_ptr += nc;
+                /* channel loop */
+                data_u8_ptr = data_u8 + (size_t) (nx * ny * k);
+                idata_ptr = idata + (size_t) k;
+                for (j = 0; j < ny; j++)
+                    {
+                    /* row loop */
+                    for (i = 0; i < nx; i++)
+                        {
+                        /* pixel loop */
+                        *idata_ptr = (png_byte) * data_u8_ptr++;
+                        idata_ptr += nc;
+                        }
+                    }
                 }
-            }
-        }
-        break;
-    case IO_PNG_F32:
-        data_f32 = (float *) data;
-        for (k = 0; k < nc; k++)
-        {
-            /* channel loop */
-            data_f32_ptr = data_f32 + (size_t) (nx * ny * k);
-            idata_ptr = idata + (size_t) k;
-            for (j = 0; j < ny; j++)
-            {
-                /* row loop */
-                for (i = 0; i < nx; i++)
+            break;
+        case IO_PNG_F32:
+            data_f32 = (float *) data;
+            for (k = 0; k < nc; k++)
                 {
-                    /* pixel loop */
-                    tmp = floor(*data_f32_ptr++ + .5);
-                    *idata_ptr = (png_byte) (tmp < 0. ? 0. :
-                                             (tmp > 255. ? 255. : tmp));
-                    idata_ptr += nc;
+                /* channel loop */
+                data_f32_ptr = data_f32 + (size_t) (nx * ny * k);
+                idata_ptr = idata + (size_t) k;
+                for (j = 0; j < ny; j++)
+                    {
+                    /* row loop */
+                    for (i = 0; i < nx; i++)
+                        {
+                        /* pixel loop */
+                        tmp = floor(*data_f32_ptr++ + .5);
+                        *idata_ptr = (png_byte) (tmp < 0. ? 0. :
+                                                 (tmp > 255. ? 255. : tmp));
+                        idata_ptr += nc;
+                        }
+                    }
                 }
-            }
+            break;
         }
-        break;
-    }
 
     /* set row pointers */
     for (j = 0; j < ny; j++)

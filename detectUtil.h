@@ -28,10 +28,11 @@
 
 using namespace arma;
 
-struct rect{
-	int pos_i;
-	int pos_j;
-	int side;
+struct rect
+{
+    int pos_i;
+    int pos_j;
+    int side;
 };
 
 /**
@@ -43,10 +44,10 @@ struct rect{
  * @return the converted image
  */
 Mat<float> * convertToColor(
-	const char * inputName
-,	int & nRows
-,	int & nCols
-,	bool & isColor
+    const char * inputName
+    ,	int & nRows
+    ,	int & nCols
+    ,	bool & isColor
 );
 
 /**
@@ -66,8 +67,8 @@ Row<float> readInCascade(
  * @param scale
  */
 inline int round(
-	int digit
-,	double scale
+    int digit
+    ,	double scale
 );
 
 
@@ -79,10 +80,10 @@ inline int round(
  * @param areas selected by the cascade and refined by postProcessing
  */
 void postProcessing(
-	int nRows
-,	int nCols
-,	float nFriends
-,	vector<rect> & areas
+    int nRows
+    ,	int nCols
+    ,	float nFriends
+    ,	vector<rect> & areas
 );
 
 /**
@@ -92,10 +93,10 @@ void postProcessing(
  * @param areas where the found faces are
  */
 void highlight(
-	const char * inputName
-,	vector<rect> & areas
-,	int PPMode
-,	float nFriends
+    const char * inputName
+    ,	vector<rect> & areas
+    ,	int PPMode
+    ,	float nFriends
 );
 
 /**
@@ -111,11 +112,11 @@ void highlight(
  */
 bool detectFace(
     rect const & area
-,	Mat<double> & integralImage
-,	double varianceNormalizer
-,	Row<float> & tweaks
-,	vector<stumpRule> const * cascade
-,	int defaultLayerNumber
+    ,	Mat<double> & integralImage
+    ,	double varianceNormalizer
+    ,	Row<float> & tweaks
+    ,	vector<stumpRule> const * cascade
+    ,	int defaultLayerNumber
 );
 
 /**
@@ -128,10 +129,10 @@ bool detectFace(
  * @return the feature's numerical value
  */
 double computeFeature(
-	int featureIndex
-,	rect const & area
-,	Mat<double> & integralImage
-,	bool removeMean
+    int featureIndex
+    ,	rect const & area
+    ,	Mat<double> & integralImage
+    ,	bool removeMean
 );
 
 /**
@@ -141,9 +142,9 @@ double computeFeature(
  * @param defaultLayerNumber how many layers should be used
  */
 void scan(
-	const char * file
-,	int defaultLayerNumber
-,	float nFriends
+    const char * file
+    ,	int defaultLayerNumber
+    ,	float nFriends
 );
 
 /**
@@ -154,8 +155,8 @@ void scan(
  * @return via the image variable
  */
 void gaussianSmoothing(
-        Mat<float> * image
-,		float sigma
+    Mat<float> * image
+    ,		float sigma
 );
 
 /**
@@ -167,9 +168,9 @@ void gaussianSmoothing(
  * @return the density up to a constant
  */
 inline float gaussianKernel(
-		float sigmaSquare
-,		int ref
-,		int cur
+    float sigmaSquare
+    ,		int ref
+    ,		int cur
 );
 
 /**
@@ -182,10 +183,10 @@ inline float gaussianKernel(
  * @return the blurred image via the image variable
  */
 void gaussianRowSmoothing(
-        Mat<float> & image
-,		float sigma
-,		int row
-,		int nRows
+    Mat<float> & image
+    ,		float sigma
+    ,		int row
+    ,		int nRows
 );
 
 /**
@@ -200,10 +201,10 @@ void gaussianRowSmoothing(
  */
 bool zoomOutNegative(
     Mat<float> *& image
-,	int shrinkedSize
-,	int defaultLayerNumber
-,	vector<stumpRule> * cascade
-,	Row<float> & tweaks
+    ,	int shrinkedSize
+    ,	int defaultLayerNumber
+    ,	vector<stumpRule> * cascade
+    ,	Row<float> & tweaks
 );
 
 /**
@@ -217,9 +218,9 @@ bool zoomOutNegative(
  */
 bool exampleScan(
     Mat<float> & example
-,	int defaultLayerNumber
-,	vector<stumpRule> const * cascade
-,	Row<float> & tweaks
+    ,	int defaultLayerNumber
+    ,	vector<stumpRule> const * cascade
+    ,	Row<float> & tweaks
 );
 
 /**
@@ -232,13 +233,13 @@ bool exampleScan(
  * @param toMark the windows recognized as a face
  */
 void tscan(
-	const char * file
-,	int & nRows
-,	int & nCols
-,	int defaultLayerNumber
-,	vector<stumpRule> * cascade
-,	Row<float> & tweaks
-,	vector<rect> & toMark
+    const char * file
+    ,	int & nRows
+    ,	int & nCols
+    ,	int defaultLayerNumber
+    ,	vector<stumpRule> * cascade
+    ,	Row<float> & tweaks
+    ,	vector<rect> & toMark
 );
 
 /**
@@ -251,33 +252,33 @@ void tscan(
  * @param inTrain am I in the training mode
  */
 void computeHaarLikeFeatures(
-        Mat<float> & image
-,		Row<float> *& features
-,		const char * toFile
-,		bool enforceShape
-,		bool inTrain
+    Mat<float> & image
+    ,		Row<float> *& features
+    ,		const char * toFile
+    ,		bool enforceShape
+    ,		bool inTrain
 );
 
 void rotateCoordinate(
-	int input_i
-,	int input_j
-,	int center_i
-,	int center_j
-,	float theta
-,	int & output_i
-,	int & output_j
+    int input_i
+    ,	int input_j
+    ,	int center_i
+    ,	int center_j
+    ,	float theta
+    ,	int & output_i
+    ,	int & output_j
 );
 
 void rotateImage(
-	const char * infile
-,	const char * outfile
-,	float theta
-,	int & center_i
-,	int & center_j
+    const char * infile
+    ,	const char * outfile
+    ,	float theta
+    ,	int & center_i
+    ,	int & center_j
 );
 
 bool isLegal(
     rect & area
-,	int nRows
-,	int nCols
+    ,	int nRows
+    ,	int nCols
 );

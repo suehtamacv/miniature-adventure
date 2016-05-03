@@ -24,30 +24,51 @@
 
 class Detector
 {
-	static int featureMap[][7];
-	static int featureCount;
-	static int sampleSize;
-	static double stumps[][4];
-	static int layerCount;
-	static int layerCommitteeSize[];
-	static float tweaks[];
+    static int featureMap[][7];
+    static int featureCount;
+    static int sampleSize;
+    static double stumps[][4];
+    static int layerCount;
+    static int layerCommitteeSize[];
+    static float tweaks[];
 
 public:
-	Detector(){}
-	~Detector(){}
+    Detector() {}
+    ~Detector() {}
 
-	static int * getFeature(int which){ return featureMap[which]; }
+    static int * getFeature(int which)
+    {
+        return featureMap[which];
+    }
 
-	static int getFeatureCount(){ return featureCount; }
+    static int getFeatureCount()
+    {
+        return featureCount;
+    }
 
-	static int getSampleSize(){ return sampleSize; }
+    static int getSampleSize()
+    {
+        return sampleSize;
+    }
 
-	static double * getStumps(int which){ return stumps[which]; }
+    static double * getStumps(int which)
+    {
+        return stumps[which];
+    }
 
-	static int getLayerCount(){ return layerCount; }
+    static int getLayerCount()
+    {
+        return layerCount;
+    }
 
-	static int getCommitteSize(int which){ return layerCommitteeSize[which]; }
+    static int getCommitteSize(int which)
+    {
+        return layerCommitteeSize[which];
+    }
 
-	static float getTweak(int which){ return tweaks[which]; }
+    static float getTweak(int which)
+    {
+        return tweaks[which];
+    }
 
 };

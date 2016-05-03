@@ -23,6 +23,8 @@ HEADERS += commonUtil.h \
            TrainExamples.h \
            io_png.h
 
+OTHER_FILES += .astylerc
+
 INSTALL_HEITOR.path = $$OUT_PWD/
 INSTALL_HEITOR.files = test.png
 
