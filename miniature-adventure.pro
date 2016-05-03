@@ -22,6 +22,7 @@ HEADERS += commonUtil.h \
            detectUtil.h \
            io_png.h
 
-LIBS += -lboost_system -lboost_program_options -larmadillo -lpng
+LIBS += -lboost_system -lboost_program_options -larmadillo -lpng -lopencv_core \
+-lopencv_highgui -lopencv_imgproc
 
 INCLUDEPATH += /usr/include/eigen3

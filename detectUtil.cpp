@@ -408,7 +408,7 @@ double computeFeature(
 	double feature = 0;
 	if(pattern == 1){
 		//some adjustment to height and width
-		height = min(height, area.side - i);
+        height = std::min(height, area.side - i);
 		width = width % 2 == 0 ? width : width + 1;
 		while(width + j > area.side)
 			width -= 2;
@@ -421,7 +421,7 @@ double computeFeature(
 		feature /= scaleAgain;
 	}else if(pattern == 2){
 		//some adjustment
-		height = min(height, area.side - i);
+        height = std::min(height, area.side - i);
 		int remainder = width % 3;
 		width = remainder == 0 ? width : width + 3 - remainder;
 		while(width + j > area.side)
@@ -437,7 +437,7 @@ double computeFeature(
 		feature /= scaleAgain;
 	}else if(pattern == 3){
 		//some adjustment
-		width = min(width, area.side - j);
+        width = std::min(width, area.side - j);
 		height = height % 2 == 0 ? height : height + 1;
 		while(height + i > area.side)
 			height -= 2;
@@ -449,7 +449,7 @@ double computeFeature(
 		feature /= scaleAgain;
 	}else if(pattern == 4){
 		//some adjustment
-		width = min(width, area.side - j);
+        width = std::min(width, area.side - j);
 		int remainder = height % 3;
 		height = remainder == 0 ? height : height + 3 - remainder;
 		while(height + i > area.side)

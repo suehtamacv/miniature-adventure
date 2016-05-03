@@ -25,39 +25,34 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
 using namespace std;
 
 #define MIN_FRIENDS 3
-int main( int argc, char * const * argv){
+int main(){
+    cv::VideoCapture webcamStream(0);
+    if (!webcamStream.isOpened()) {
+        return EXIT_FAILURE;
+    }
 
-	bool stop = false;
+    int defaultLayerNumber = -1;
+    float required_nFriends = MIN_FRIENDS;
 
-	//sanity check
-	if(!(argc == 2 || argc == 4)){
-		cerr << "\n\t Usage: please provide a PNG image for face detection.\n";
-		cerr << "\t If the number of layers is specified, only those are used in detection.\n";
-		cerr << "\t The robustness threshold for postprocessing can also be set here.\n\n";
-		stop = true;
-	}else{
-		string imageName(argv[1]);
-		string legalSuffix(".png");
-		if(imageName.find(legalSuffix)==string::npos){
-			cerr << "\n\tOnly PNG is supported. If your input is a PNG, please include its suffix.\n\n";
-			stop = true;
-		}
-	}
+    while (true) {
+        cv::Mat cameraFrame;
+        webcamStream.read(cameraFrame);
 
-	//what to do
-	if(stop){
-		cerr << "\t\t Example: \n\n";
-		cerr << "\t\t\t\t ./detect example.png <number of layers> <threshold>\n\n";
-        	return EXIT_FAILURE;
-	}
+        cv::imwrite("frame.png", cameraFrame);
+        scan("frame.png", defaultLayerNumber, required_nFriends);
 
-	//if defaultLayerNumber = -1, the detector shall base its decision on all the cascade layers
-	int defaultLayerNumber = argc == 4 ? atoi(argv[2]) : -1;
-	float required_nFriends = argc == 4 ? atoi(argv[3]) : MIN_FRIENDS;
-	const char * image = argv[1];
-	scan(image, defaultLayerNumber, required_nFriends);
+        cv::Mat detectFrame = cv::imread("detectedraw.png");
+        cv::imshow("detect", detectFrame);
+
+        if (cv::waitKey(30) >= 0)
+        break;
+    }
+
+    return 0;
 }

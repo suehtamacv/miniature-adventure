@@ -170,11 +170,10 @@ long double sumImagePart(
 	int di = ui + ir - 1;
 	int dj = uj + jr - 1;
 	//standard operation
-	long double sum = integralImage(di,dj);
-	sum -= ui > 0 ? integralImage(ui-1,dj) : 0;
-	sum -= uj > 0 ? integralImage(di,uj-1) : 0;
-	sum += min(ui, uj) > 0 ? integralImage(ui-1,uj-1) : 0;
-	return sum;
+    return integralImage(di,dj) -
+            (ui > 0 ? integralImage(ui-1,dj) : 0) -
+            (uj > 0 ? integralImage(di,uj-1) : 0) +
+            (((ui > 0) && (uj > 0)) ? integralImage(ui-1,uj-1) : 0);
 }
 
 //convert the pathFile to char array and return path count
