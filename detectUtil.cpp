@@ -46,8 +46,6 @@
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 
-bool mustRotate = false;
-
 using namespace std;
 using namespace arma;
 
@@ -57,11 +55,11 @@ void gaussianSmoothing(Mat<float> *image
                       )
 {
     int nRows = image[0].n_rows;
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int row = 0; row < nRows; row++)
         gaussianRowSmoothing(image[0], sigma, row, nRows);
     Mat<float> imageMatrix = image[0].t();
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int row = 0; row < nRows; row++)
         gaussianRowSmoothing(imageMatrix, sigma, row, nRows);
     image[0] = imageMatrix.t();
@@ -87,7 +85,7 @@ void gaussianRowSmoothing(Mat<float> &image
     float sigmaSquare = pow(sigma, 2)*2;
     //temporary storage for convolution
     Row<float> container(nRows);
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int k = 0; k < nRows; k++)
         {
         //kernel position
@@ -126,7 +124,7 @@ bool zoomOutNegative(Mat<float> *&image
     Mat<float> zoomed(shrinkedSize, shrinkedSize);
     int imSize = pow((float)shrinkedSize, 2);
     //an efficient parallelization for downsampling
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int count = 0; count < imSize; count++)
         {
         int row = count/shrinkedSize;
@@ -356,13 +354,14 @@ bool detectFace(rect const & area
     for(int layer = 0; layer < layerCount; layer++)
         {
         vector<stumpRule> committee = cascade[layer];
+        double tweak = tweaks[layer];
         double prediction = 0;
         int committeeSize = committee.size();
-        #pragma omp parallel for schedule (static)
+        #pragma omp parallel for schedule (dynamic)
         for(int rule = 0; rule < committeeSize; rule++)
             {
             double featureValue = computeFeature(committee[rule].featureIndex, area, integralImage, true)/varianceNormalizer;
-            double vote = (featureValue > committee[rule].threshold ? 1 : -1)*committee[rule].toggle+tweaks[layer];
+            double vote = (featureValue > committee[rule].threshold ? 1 : -1)*committee[rule].toggle+tweak;
             prediction += vote*committee[rule].logWeightedError;
             }
         if(prediction < 0)
@@ -547,31 +546,29 @@ void scan(
     //scan the file
     int nRows, nCols;
     tscan(file, nRows, nCols, defaultLayerNumber, cascade, tweaks, combined);
-    if (mustRotate)
+#ifdef MUST_ROTATE
+    float theta = ROTATE_DEGREE/180.*M_PI;
+    int center_i, center_j;
+    for(int bf = 1; bf < 3; bf++)
         {
-        float theta = ROTATE_DEGREE/180.*M_PI;
-        int center_i, center_j;
-        for(int bf = 1; bf < 3; bf++)
-            {
-            float curTheta = pow(-1.,bf)*theta;
-            rotateImage(file, "rotated.png", curTheta, center_i, center_j);
-            tscan("rotated.png", nRows, nCols, defaultLayerNumber, cascade, tweaks, toMark);
-            int num = toMark.size();
-            for(int k = 0; k < num; k++)
-                rotateCoordinate(toMark[k].pos_i, toMark[k].pos_j, center_i, center_j, curTheta, toMark[k].pos_i, toMark[k].pos_j);
-            combined.reserve(combined.size() + toMark.size());
-            combined.insert(combined.end(), toMark.begin(), toMark.end());
-            toMark.resize(0);
-            }
+        float curTheta = pow(-1.,bf)*theta;
+        rotateImage(file, "rotated.png", curTheta, center_i, center_j);
+        tscan("rotated.png", nRows, nCols, defaultLayerNumber, cascade, tweaks, toMark);
+        int num = toMark.size();
+        for(int k = 0; k < num; k++)
+            rotateCoordinate(toMark[k].pos_i, toMark[k].pos_j, center_i, center_j, curTheta, toMark[k].pos_i, toMark[k].pos_j);
+        combined.reserve(combined.size() + toMark.size());
+        combined.insert(combined.end(), toMark.begin(), toMark.end());
+        toMark.resize(0);
         }
+#endif
     delete [] cascade;
+#ifdef MUST_ROTATE
     //due to rotation, the coordinates might not be legal
-    if (mustRotate)
-        {
-        for(int i = 0; i < (int)combined.size(); i++)
-            if(isLegal(combined[i], nRows, nCols))
-                toMark.push_back(combined[i]);
-        }
+    for(int i = 0; i < (int)combined.size(); i++)
+        if(isLegal(combined[i], nRows, nCols))
+            toMark.push_back(combined[i]);
+#endif
     highlight(file, combined, 1, required_nFriends);
 }
 
@@ -597,7 +594,7 @@ void tscan(const char * file
     //get down to the business
     int sampleSize = Detector::getSampleSize();
     int possibleULCorners = (nRows - sampleSize + 1)*(nCols - sampleSize + 1);
-    #pragma omp parallel for schedule (static)
+    #pragma omp parallel for schedule (dynamic)
     for(int ij = 0; ij <= possibleULCorners; ij++)
         {
         int i = ij/(nCols - sampleSize + 1);
@@ -1037,7 +1034,7 @@ void rotateImage(
     rotated[0] = zeros<Mat<float>>(nRows, nCols);
     center_i = nRows/2;
     center_j = nCols/2;
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int ij = 0; ij < imsize; ij++)
         {
         int i = ij/nCols;
