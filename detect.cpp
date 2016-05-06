@@ -30,15 +30,36 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
+
 using namespace std;
 
 #define MIN_FRIENDS 3
+#define MAX_COLS 240
+#define MAX_ROWS 320
+
 int main()
 {
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
 
-    scan("test.png", defaultLayerNumber, required_nFriends);
+    cv::Mat image = cv::imread("test.png");
+    int nCols = 0, nRows = 0;
+
+    if (image.cols > image.rows)
+        {
+        nCols = std::min(image.cols, MAX_COLS);
+        nRows = (image.rows / (double) image.cols) * nCols;
+        }
+    else
+        {
+        nRows = std::min(image.rows, MAX_ROWS);
+        nCols = (image.cols / (double) image.rows) * nRows;
+        }
+
+    cv::resize(image, image, cv::Size(nCols, nRows), 0, 0, CV_INTER_CUBIC);
+    cv::imwrite("resize.png", image);
+
+    scan("resize.png", defaultLayerNumber, required_nFriends);
 
     return 0;
 }
