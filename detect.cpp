@@ -30,6 +30,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
+#include "train_neural.h"
+#include <fann.h>
 
 using namespace std;
 
@@ -40,6 +42,8 @@ using namespace std;
 
 int main()
 {
+    train_neural();
+
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
 
