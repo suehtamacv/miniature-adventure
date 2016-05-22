@@ -28,7 +28,7 @@ HEADERS += commonUtil.h \
 OTHER_FILES += .astylerc
 
 INSTALL_HEITOR.path = $$OUT_PWD/
-INSTALL_HEITOR.files = test.png photoData.dat Neural.net
+INSTALL_HEITOR.files = test.png photoData.dat
 
 INSTALLS += INSTALL_HEITOR
 

@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
@@ -40,11 +41,11 @@ using namespace std;
 #define MAX_ROWS 400
 #define MUST_RESIZE
 
-double identify_face(cv::Mat frame, rect fL);
+float *identify_face(cv::Mat frame, rect fL);
 
 int main()
 {
-    //train_neural();
+    train_neural();
 
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
@@ -61,9 +62,11 @@ int main()
             {
             cv::VideoCapture stream1(0);
             stream1.read(frame);
+            stream1.read(detectedFaces);
             stream1.release();
             }
-        frame = cv::imread("test.png");
+        /*frame = cv::imread("test.png");
+        detectedFaces = cv::imread("test.png");*/
 
 #ifdef MUST_RESIZE
         int nCols = 0, nRows = 0;
@@ -79,50 +82,54 @@ int main()
             nCols = (frame.cols / (double) frame.rows) * nRows;
             }
 
-        cv::resize(frame, frame, cv::Size(nCols, nRows), 0, 0, CV_INTER_CUBIC);
+        cv::resize(frame, detectedFaces, cv::Size(nCols, nRows), 0, 0, CV_INTER_CUBIC);
 #endif
-        cv::imwrite("frame.png", frame);
+        cv::imwrite("frame.png", detectedFaces);
 
         vector<rect> faces = scan("frame.png", defaultLayerNumber, required_nFriends);
-        auto dectFrame = cv::Mat(frame);
 
         for (rect face : faces)
             {
-            std::cout << identify_face(dectFrame, face) << std::endl;
-            cv::rectangle(dectFrame, cv::Point(face.pos_j, face.pos_i), cv::Point(face.pos_j+face.side, face.pos_i+face.side), cv::Scalar(0,255,0), 2);
+            cv::rectangle(detectedFaces, cv::Point(face.pos_j, face.pos_i),
+                          cv::Point(face.pos_j+face.side, face.pos_i+face.side),
+                          cv::Scalar(0, 255, 0), 2);
+            float* id = identify_face(detectedFaces, face);
+            std::cout << id[0] << "\t" << id[1] << std::endl;
+
+            if (id[0] > 0.90)
+                {
+                cv::putText(detectedFaces, "Matheus", cv::Point(face.pos_j-5, face.pos_i-5), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+                }
+            else if (id[1] > 0.90)
+                {
+                cv::putText(detectedFaces, "Sara", cv::Point(face.pos_j-5, face.pos_i-5), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+                }
             }
 
         cv::imshow("FrameOriginal", frame);
-        cv::imshow("RostosDetectados", dectFrame);
+        cv::imshow("RostosDetectados", detectedFaces);
         }
     return 0;
 }
 
-double identify_face(cv::Mat frame, rect fL)
+float* identify_face(cv::Mat frame, rect fL)
 {
     cv::Mat face = frame(cv::Range(fL.pos_i,fL.pos_i+fL.side),
                          cv::Range(fL.pos_j,fL.pos_j+fL.side)).t();
-    cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
     cv::cvtColor(face, face, CV_RGB2GRAY);
+    cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
     face.reshape(1, 1024);
 
     std::vector<float> image;
     image.assign(face.datastart, face.dataend);
 
-    float minPix = std::numeric_limits<float>::max();
-    float maxPix = -1;
-
+    double summ = 0;
     for (auto &pixel : image)
         {
-        if (minPix > pixel) minPix = pixel;
-        if (maxPix < pixel) maxPix = pixel;
+        summ += pixel;
         }
-
-    for (auto &pixel : image)
-        {
-        pixel = (pixel - minPix) / (1.0*(maxPix - minPix));
-        }
+    for (auto &pixel : image) pixel /= summ;
 
     struct fann *ann = fann_create_from_file("Neural.net");
-    return *fann_run(ann, image.data());
+    return fann_run(ann, image.data());
 }
