@@ -31,7 +31,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
 #include "train_neural.h"
-#include <doublefann.h>
+#include <floatfann.h>
 
 using namespace std;
 
@@ -63,6 +63,7 @@ int main()
             stream1.read(frame);
             stream1.release();
             }
+        frame = cv::imread("test.png");
 
 #ifdef MUST_RESIZE
         int nCols = 0, nRows = 0;
@@ -83,13 +84,16 @@ int main()
         cv::imwrite("frame.png", frame);
 
         vector<rect> faces = scan("frame.png", defaultLayerNumber, required_nFriends);
+        auto dectFrame = cv::Mat(frame);
 
         for (rect face : faces)
             {
-            std::cout << identify_face(frame, face) << std::endl;
+            std::cout << identify_face(dectFrame, face) << std::endl;
+            cv::rectangle(dectFrame, cv::Point(face.pos_j, face.pos_i), cv::Point(face.pos_j+face.side, face.pos_i+face.side), cv::Scalar(0,255,0), 2);
             }
 
         cv::imshow("FrameOriginal", frame);
+        cv::imshow("RostosDetectados", dectFrame);
         }
     return 0;
 }
@@ -97,16 +101,16 @@ int main()
 double identify_face(cv::Mat frame, rect fL)
 {
     cv::Mat face = frame(cv::Range(fL.pos_i,fL.pos_i+fL.side),
-                         cv::Range(fL.pos_j,fL.pos_j+fL.side));
+                         cv::Range(fL.pos_j,fL.pos_j+fL.side)).t();
     cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
     cv::cvtColor(face, face, CV_RGB2GRAY);
-    face = face.reshape(1024,1);
+    face.reshape(1, 1024);
 
-    std::vector<double> image;
+    std::vector<float> image;
     image.assign(face.datastart, face.dataend);
 
-    double minPix = std::numeric_limits<double>::max();
-    double maxPix = -1;
+    float minPix = std::numeric_limits<float>::max();
+    float maxPix = -1;
 
     for (auto &pixel : image)
         {
