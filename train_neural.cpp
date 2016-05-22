@@ -1,4 +1,4 @@
-#include <floatfann.h>
+#include <doublefann.h>
 #include <fann_train.h>
 #include "train_neural.h"
 

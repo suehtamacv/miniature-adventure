@@ -31,7 +31,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "detectUtil.h"
 #include "train_neural.h"
-#include <fann.h>
+#include <doublefann.h>
 
 using namespace std;
 
@@ -40,9 +40,11 @@ using namespace std;
 #define MAX_ROWS 400
 #define MUST_RESIZE
 
+double identify_face(cv::Mat frame, rect fL);
+
 int main()
 {
-    train_neural();
+    //train_neural();
 
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
@@ -82,8 +84,41 @@ int main()
 
         vector<rect> faces = scan("frame.png", defaultLayerNumber, required_nFriends);
 
+        for (rect face : faces)
+            {
+            std::cout << identify_face(frame, face) << std::endl;
+            }
+
         cv::imshow("FrameOriginal", frame);
-        cv::imshow("RostosDetectados", detectedFaces);
         }
     return 0;
+}
+
+double identify_face(cv::Mat frame, rect fL)
+{
+    cv::Mat face = frame(cv::Range(fL.pos_i,fL.pos_i+fL.side),
+                         cv::Range(fL.pos_j,fL.pos_j+fL.side));
+    cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
+    cv::cvtColor(face, face, CV_RGB2GRAY);
+    face = face.reshape(1024,1);
+
+    std::vector<double> image;
+    image.assign(face.datastart, face.dataend);
+
+    double minPix = std::numeric_limits<double>::max();
+    double maxPix = -1;
+
+    for (auto &pixel : image)
+        {
+        if (minPix > pixel) minPix = pixel;
+        if (maxPix < pixel) maxPix = pixel;
+        }
+
+    for (auto &pixel : image)
+        {
+        pixel = (pixel - minPix) / (1.0*(maxPix - minPix));
+        }
+
+    struct fann *ann = fann_create_from_file("Neural.net");
+    return *fann_run(ann, image.data());
 }
