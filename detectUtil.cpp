@@ -36,6 +36,7 @@
 #include "detectUtil.h"
 #include "Detector.h"
 
+#define MUST_ROTATE
 #define FOLLOW_VJ true
 #define PEN_WIDTH 3
 #define STD_NORM_CONST 1e4
@@ -1048,4 +1049,3 @@ void rotateImage(
     imwrite(outfile, rotated, 1);
     delete [] image;
 }
-
