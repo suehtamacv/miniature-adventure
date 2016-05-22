@@ -94,7 +94,7 @@ void postProcessing(
  * @param inputName which image
  * @param areas where the found faces are
  */
-void highlight(
+vector<rect> highlight(
     const char * inputName
     ,	vector<rect> & areas
     ,	int PPMode
@@ -143,7 +143,7 @@ double computeFeature(
  * @param file image name
  * @param defaultLayerNumber how many layers should be used
  */
-void scan(
+vector<rect> scan(
     const char * file
     ,	int defaultLayerNumber
     ,	float nFriends

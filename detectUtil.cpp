@@ -282,7 +282,7 @@ void augmentedPostProcessing(
 }
 
 //highlight a rectangle part of an image
-void highlight(
+vector<rect> highlight(
     const char * inputName
     ,	vector<rect> & areas
     ,	int ppMode
@@ -296,46 +296,7 @@ void highlight(
     //no detection, no post-processing
     ppMode = nSquares == 0 ? 0 : ppMode;
     augmentedPostProcessing(original, nRows, nCols, isColor, required_nFriends, areas, ppMode);
-    nSquares = areas.size();
-    for(int k = 0; k < nSquares; k++)
-        {
-
-        //take the parameters
-        int cornerI = areas[k].pos_i;
-        int cornerJ = areas[k].pos_j;
-        int side = areas[k].side;
-
-        //I'm working with a color image, and always highlight with green
-        for(int i = cornerI; i < cornerI + side; i++)
-            for(int j = cornerJ; j < cornerJ + side; j++)
-                {
-                bool paint = false;
-                if( abs(cornerI + PEN_WIDTH/2 -i) <= PEN_WIDTH/2 && abs(cornerJ + side/2 - j) <= side/2 )
-                    paint = true;
-                else if(abs(cornerI + side - 1 - PEN_WIDTH/2 - i) <= PEN_WIDTH/2 && abs(cornerJ + side/2 - j) <= side/2)
-                    paint = true;
-                else if( abs(cornerJ + PEN_WIDTH/2 -j) <= PEN_WIDTH/2 && abs(cornerI + side/2 - i) <= side/2)
-                    paint = true;
-                else if(abs(cornerJ + side - 1 - PEN_WIDTH/2 - j) <= PEN_WIDTH/2 && abs(cornerI + side/2 - i) <= side/2)
-                    paint = true;
-                if(paint)
-                    {
-                    original[0](i,j) = 0;
-                    original[1](i,j) = 255;
-                    original[2](i,j) = 0;
-                    }
-                }
-        }
-
-    //output
-    if(ppMode == 0)
-        imwrite("detectedraw.png", original, 3);
-    else if(ppMode == 1)
-        imwrite("ppRobust.png", original, 3);
-    else if(ppMode == 2)
-        imwrite("ppSkin.png", original, 3);
-    else
-        imwrite("ppBoth.png", original, 3);
+    return areas;
 }
 
 //look at a subwindow and use the trained cascade to reject or accept it
@@ -534,11 +495,10 @@ bool exampleScan(
 
 
 //main routine
-void scan(
-    const char * file
-    ,	int defaultLayerNumber
-    ,	float required_nFriends
-)
+vector<rect> scan(const char * file
+          ,	int defaultLayerNumber
+          ,	float required_nFriends
+         )
 {
     //read in cascade
     vector<stumpRule> * cascade = NULL;
@@ -570,7 +530,7 @@ void scan(
         if(isLegal(combined[i], nRows, nCols))
             toMark.push_back(combined[i]);
 #endif
-    highlight(file, combined, 1, required_nFriends);
+    return highlight(file, combined, 1, required_nFriends);
 }
 
 void tscan(const char * file

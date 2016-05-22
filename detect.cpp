@@ -76,8 +76,7 @@ int main()
 #endif
         cv::imwrite("frame.png", frame);
 
-        scan("frame.png", defaultLayerNumber, required_nFriends);
-        detectedFaces = cv::imread("detectedraw.png");
+        vector<rect> faces = scan("frame.png", defaultLayerNumber, required_nFriends);
 
         cv::imshow("FrameOriginal", frame);
         cv::imshow("RostosDetectados", detectedFaces);
