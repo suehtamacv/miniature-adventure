@@ -39,13 +39,12 @@ using namespace std;
 #define MIN_FRIENDS 3
 #define MAX_COLS 300
 #define MAX_ROWS 400
-#define MUST_RESIZE
 
 float *identify_face(cv::Mat frame, rect fL);
 
 int main()
 {
-    train_neural();
+    //train_neural();
 
     int defaultLayerNumber = -1;
     float required_nFriends = MIN_FRIENDS;
@@ -57,16 +56,14 @@ int main()
     while (true)
         {
         cv::Mat frame;
-        cv::Mat detectedFaces;
 
             {
             cv::VideoCapture stream1(0);
             stream1.read(frame);
-            stream1.read(detectedFaces);
+            stream1.read(frame);
             stream1.release();
             }
-        /*frame = cv::imread("test.png");
-        detectedFaces = cv::imread("test.png");*/
+        frame = cv::imread("test4.jpg");
 
 #ifdef MUST_RESIZE
         int nCols = 0, nRows = 0;
@@ -82,54 +79,67 @@ int main()
             nCols = (frame.cols / (double) frame.rows) * nRows;
             }
 
-        cv::resize(frame, detectedFaces, cv::Size(nCols, nRows), 0, 0, CV_INTER_CUBIC);
+        cv::resize(frame, frame, cv::Size(nCols, nRows), 0, 0, CV_INTER_CUBIC);
 #endif
-        cv::imwrite("frame.png", detectedFaces);
+        cv::imwrite("frame.png", frame);
 
         vector<rect> faces = scan("frame.png", defaultLayerNumber, required_nFriends);
 
         for (rect face : faces)
             {
-            cv::rectangle(detectedFaces, cv::Point(face.pos_j, face.pos_i),
+            cv::rectangle(frame, cv::Point(face.pos_j, face.pos_i),
                           cv::Point(face.pos_j+face.side, face.pos_i+face.side),
                           cv::Scalar(0, 255, 0), 2);
-            float* id = identify_face(detectedFaces, face);
-            std::cout << id[0] << "\t" << id[1] << std::endl;
+            float* id = identify_face(frame, face);
+            std::cout << id[0] << "\t" << id[1] << "\t" << id[2] << std::endl;
 
-            if (id[0] > 0.90)
+            if ((id[0] > id[1]) && (id[0] > id[2]) && (id[0] > 0))
                 {
-                cv::putText(detectedFaces, "Matheus", cv::Point(face.pos_j-5, face.pos_i-5), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+                cv::putText(frame, "Matheus", cv::Point(face.pos_j, face.pos_i-3), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
                 }
-            else if (id[1] > 0.90)
+            else if ((id[1] > id[0]) && (id[1] > id[2]) && (id[1] > 0))
                 {
-                cv::putText(detectedFaces, "Sara", cv::Point(face.pos_j-5, face.pos_i-5), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+                cv::putText(frame, "Sara", cv::Point(face.pos_j, face.pos_i-3), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+                }
+            else if ((id[2] > id[0]) && (id[2] > id[1]) && (id[2] > 0))
+                {
+                cv::putText(frame, "Outro", cv::Point(face.pos_j, face.pos_i-3), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
                 }
             }
 
-        cv::imshow("FrameOriginal", frame);
-        cv::imshow("RostosDetectados", detectedFaces);
+        cv::imshow("FrameOriginal", cv::imread("frame.png"));
+        cv::imshow("RostosDetectados", frame);
         }
     return 0;
 }
 
 float* identify_face(cv::Mat frame, rect fL)
 {
-    cv::Mat face = frame(cv::Range(fL.pos_i,fL.pos_i+fL.side),
-                         cv::Range(fL.pos_j,fL.pos_j+fL.side)).t();
-    cv::cvtColor(face, face, CV_RGB2GRAY);
-    cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
-    face.reshape(1, 1024);
-
-    std::vector<float> image;
-    image.assign(face.datastart, face.dataend);
-
-    double summ = 0;
-    for (auto &pixel : image)
+    if ((fL.pos_i + fL.side < frame.cols) && (fL.pos_j+fL.side < frame.rows))
         {
-        summ += pixel;
-        }
-    for (auto &pixel : image) pixel /= summ;
+        cv::Mat face = frame(cv::Range(fL.pos_i,fL.pos_i+fL.side),
+                             cv::Range(fL.pos_j,fL.pos_j+fL.side)).t();
+        cv::cvtColor(face, face, CV_RGB2GRAY);
+        cv::resize(face, face, cv::Size(32,32), 0, 0, CV_INTER_CUBIC);
+        face.reshape(1, 1024);
 
-    struct fann *ann = fann_create_from_file("Neural.net");
-    return fann_run(ann, image.data());
+        std::vector<float> image;
+        image.assign(face.datastart, face.dataend);
+
+        double summ = 0;
+        for (auto &pixel : image)
+            {
+            summ += pixel;
+            }
+        for (auto &pixel : image) pixel /= summ;
+
+        struct fann *ann = fann_create_from_file("Neural.net");
+        return fann_run(ann, image.data());
+        }
+    else
+        {
+        float *a = new float[3];
+        a[0] = a[1] = a[2] = -1;
+        return a;
+        }
 }
