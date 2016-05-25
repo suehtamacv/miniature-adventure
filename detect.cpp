@@ -36,6 +36,7 @@
 
 using namespace std;
 
+#define MUST_RESIZE
 #define MIN_FRIENDS 3
 #define MAX_COLS 300
 #define MAX_ROWS 400
@@ -53,7 +54,7 @@ int main()
     cv::namedWindow("RostosDetectados");
     cv::startWindowThread();
 
-    while (true)
+    while(true)
         {
         cv::Mat frame;
 
@@ -63,7 +64,6 @@ int main()
             stream1.read(frame);
             stream1.release();
             }
-        frame = cv::imread("test4.jpg");
 
 #ifdef MUST_RESIZE
         int nCols = 0, nRows = 0;
@@ -109,7 +109,9 @@ int main()
 
         cv::imshow("FrameOriginal", cv::imread("frame.png"));
         cv::imshow("RostosDetectados", frame);
+        cv::imwrite("detected.png", frame);
         }
+
     return 0;
 }
 
